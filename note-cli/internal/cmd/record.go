@@ -74,7 +74,7 @@ func startRecording() error {
 
 	// Generate filename with timestamp
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	filename := fmt.Sprintf("recording_%s.wav", timestamp)
+	filename := fmt.Sprintf("recording_%s.mp3", timestamp)
 	filepath := filepath.Join(recordingsDir, filename)
 
 	fmt.Println("🎤 Starting audio recording...")
@@ -90,7 +90,8 @@ func startRecording() error {
 		"-i", inputDevice,        // Use selected microphone
 		"-ac", "1",              // Mono audio
 		"-ar", "44100",          // Sample rate
-		"-acodec", "pcm_s16le",  // 16-bit PCM audio codec
+		"-acodec", "libmp3lame", // MP3 audio codec (LAME encoder)
+		"-ab", "128k",           // Audio bitrate for compression
 		"-y",                    // Overwrite output file if exists
 		filepath,
 	)
@@ -173,8 +174,8 @@ func startRecording() error {
 		EndTime:     endTime,
 		Duration:    duration,
 		FileSize:    fileInfo.Size(),
-		Format:      "wav",
-		SampleRate:  44100, // Default for ffmpeg
+		Format:      "mp3",
+		SampleRate:  44100, // Sample rate
 		Channels:    1,     // Mono recording
 		CreatedAt:   time.Now(),
 	}
