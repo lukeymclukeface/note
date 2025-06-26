@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"note-cli/internal/config"
+	"note-cli/internal/constants"
 	"note-cli/internal/database"
 	"os"
 	"os/exec"
@@ -29,7 +30,6 @@ var setupCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(setupCmd)
 }
-
 
 func runInteractiveSetup() {
 	// Check brew installation first
@@ -163,13 +163,11 @@ func runInteractiveSetup() {
 
 		if setupDb {
 			// Use default database path
-			homeDir, err := os.UserHomeDir()
+			dbPath, err := constants.GetDatabasePath()
 			if err != nil {
-				fmt.Printf("❌ Error getting home directory: %v\n", err)
+				fmt.Printf("❌ Error getting database path: %v\n", err)
 				return
 			}
-
-			dbPath := homeDir + "/.note-cli/notes.db"
 
 			// Run database setup
 			if err := setupDatabase(dbPath); err != nil {

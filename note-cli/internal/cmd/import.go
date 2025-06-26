@@ -1,20 +1,22 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"note-cli/internal/config"
+	"note-cli/internal/constants"
 	"note-cli/internal/database"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
-	"net/http"
-	"bytes"
-	"encoding/json"
+
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +31,8 @@ Supported audio formats: mp3, wav, m4a, ogg, flac
 Requires:
 - OpenAI API key configured (run 'note setup')
 - ffmpeg installed for format conversion`,
-	Args:  cobra.ExactArgs(1),
-	RunE:  importFile,
+	Args: cobra.ExactArgs(1),
+	RunE: importFile,
 }
 
 func init() {
@@ -82,28 +84,27 @@ func importFile(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("ffmpeg not found. Please install with 'brew install ffmpeg' or run 'note setup'")
 	}
 
-	// Copy to recordings directory
-	homeDir, _ := os.UserHomeDir()
-	recordingsDir := filepath.Join(homeDir, ".note-cli", "recordings")
-	if err := os.MkdirAll(recordingsDir, 0755); err != nil {
-		return fmt.Errorf("failed to create recordings directory: %w", err)
+	// Create a unique folder under notes directory
+	notesDir, err := constants.GetNotesDir()
+	if err != nil {
+		return fmt.Errorf("failed to get notes directory: %w", err)
 	}
 
+	// Create a unique folder for this import
+	originalFilename := strings.TrimSuffix(filepath.Base(mp3Path), filepath.Ext(mp3Path))
+	folderName := fmt.Sprintf("%s_%s", originalFilename, time.Now().Format("20060102_150405"))
+	destinationDir := filepath.Join(notesDir, folderName)
+
+	if err := os.MkdirAll(destinationDir, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	// Copy MP3 to the new directory
 	filename := filepath.Base(mp3Path)
-	// Generate unique filename if file already exists
-	newFilePath := filepath.Join(recordingsDir, filename)
-	if _, err := os.Stat(newFilePath); err == nil {
-		// File exists, generate unique name with timestamp
-		ext := filepath.Ext(filename)
-		base := strings.TrimSuffix(filename, ext)
-		timestamp := time.Now().Format("20060102_150405")
-		filename = fmt.Sprintf("%s_%s%s", base, timestamp, ext)
-		newFilePath = filepath.Join(recordingsDir, filename)
-	}
-
-	fmt.Println("📁 Copying file to recordings directory...")
+	newFilePath := filepath.Join(destinationDir, filename)
+	fmt.Println("📁 Copying MP3 file to notes directory...")
 	if err := copyFile(mp3Path, newFilePath); err != nil {
-		return fmt.Errorf("failed to copy file: %w", err)
+		return fmt.Errorf("failed to copy MP3 file: %w", err)
 	}
 
 	// Get file info for complete recording metadata
@@ -145,21 +146,40 @@ func importFile(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to summarize transcription: %w", err)
 	}
 
-	// Connect to database for note creation
+	// Save transcription and summary as separate markdown files
+	transcriptionPath := filepath.Join(destinationDir, "transcription.md")
+	summaryPath := filepath.Join(destinationDir, "summary.md")
+
+	fmt.Println("📝 Saving transcription and summary as markdown files...")
+
+	// Write transcription file
+	transcriptionContent := fmt.Sprintf("# Transcription\n\n%s\n", transcript)
+	if err := os.WriteFile(transcriptionPath, []byte(transcriptionContent), 0644); err != nil {
+		return fmt.Errorf("failed to write transcription file: %w", err)
+	}
+
+	// Write summary file
+	summaryContent := fmt.Sprintf("# Summary\n\n%s\n", summary)
+	if err := os.WriteFile(summaryPath, []byte(summaryContent), 0644); err != nil {
+		return fmt.Errorf("failed to write summary file: %w", err)
+	}
+
+	// Connect to database for note creation with metadata only
 	db, err := database.Connect(cfg.DatabasePath)
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer db.Close()
 
-	// Save as note
-	title := fmt.Sprintf("Summary of %s", filename)
-	content := fmt.Sprintf("## Transcription\n\n%s\n\n## Summary\n\n%s", transcript, summary)
-	tags := "imported,audio,transcription"
+	// Create a metadata note that references the files
+	title := fmt.Sprintf("Audio Import: %s", originalFilename)
+	content := fmt.Sprintf("Audio file imported and processed.\n\nFiles:\n- Audio: %s\n- Transcription: %s\n- Summary: %s\n\nFolder: %s", 
+		filename, "transcription.md", "summary.md", folderName)
+	tags := "imported,audio,metadata"
 
-	fmt.Println("📋 Saving transcription and summary as note...")
+	fmt.Println("📋 Saving metadata note to database...")
 	if _, err := database.CreateNote(db, title, content, tags); err != nil {
-		return fmt.Errorf("failed to save note: %w", err)
+		return fmt.Errorf("failed to save metadata note: %w", err)
 	}
 
 	fmt.Printf("✅ File '%s' successfully imported and processed:\n", filename)
@@ -182,15 +202,15 @@ func convertToMP3(filePath string) (string, error) {
 	}
 
 	outputPath := strings.TrimSuffix(filePath, ext) + ".mp3"
-	cmd := exec.Command("ffmpeg", 
-		"-i", filePath, 
-		"-acodec", "libmp3lame", 
+	cmd := exec.Command("ffmpeg",
+		"-i", filePath,
+		"-acodec", "libmp3lame",
 		"-ab", "128k",
 		"-ar", "44100", // Standardize sample rate
-		"-ac", "1",     // Convert to mono
-		"-y",          // Overwrite output file
+		"-ac", "1", // Convert to mono
+		"-y", // Overwrite output file
 		outputPath)
-	
+
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -281,15 +301,15 @@ func summarizeText(text, apiKey string) (string, error) {
 		"model": "gpt-3.5-turbo",
 		"messages": []map[string]interface{}{
 			{
-				"role": "system",
+				"role":    "system",
 				"content": "You are a helpful assistant that creates concise summaries of transcribed audio content.",
 			},
 			{
-				"role": "user",
+				"role":    "user",
 				"content": fmt.Sprintf("Please provide a concise summary of the following transcribed audio:\n\n%s", text),
 			},
 		},
-		"max_tokens": 300,
+		"max_tokens":  300,
 		"temperature": 0.7,
 	})
 	if err != nil {
@@ -342,4 +362,3 @@ func summarizeText(text, apiKey string) (string, error) {
 
 	return strings.TrimSpace(content), nil
 }
-

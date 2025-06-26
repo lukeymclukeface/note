@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 	"note-cli/internal/config"
+	"note-cli/internal/constants"
 	"note-cli/internal/database"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -75,31 +75,30 @@ func listRecordings() error {
 	fmt.Printf("🎵 Found %d recording(s):\n\n", len(recordings))
 
 	for i, recording := range recordings {
-	// Check if file still exists
-	exists := "✅"
-	if _, err := os.Stat(recording.FilePath); os.IsNotExist(err) {
-		exists = "❌"
-	}
-	
-	// Format duration
-	duration := recording.Duration.Round(time.Second)
-	
-	// Format file size
-	sizeStr := formatFileSize(recording.FileSize)
-	
-	// Format created date
-	createdStr := recording.CreatedAt.Format("2006-01-02 15:04:05")
-	
-	fmt.Printf("%d. %s %s\n", i+1, exists, recording.Filename)
-	fmt.Printf("   Duration: %v | Size: %s | Created: %s\n", duration, sizeStr, createdStr)
-	fmt.Printf("   Format: %s | %d Hz | %d channel(s)\n", recording.Format, recording.SampleRate, recording.Channels)
-	fmt.Printf("   Path: %s\n", recording.FilePath)
-	fmt.Println()
+		// Check if file still exists
+		exists := "✅"
+		if _, err := os.Stat(recording.FilePath); os.IsNotExist(err) {
+			exists = "❌"
+		}
+
+		// Format duration
+		duration := recording.Duration.Round(time.Second)
+
+		// Format file size
+		sizeStr := formatFileSize(recording.FileSize)
+
+		// Format created date
+		createdStr := recording.CreatedAt.Format("2006-01-02 15:04:05")
+
+		fmt.Printf("%d. %s %s\n", i+1, exists, recording.Filename)
+		fmt.Printf("   Duration: %v | Size: %s | Created: %s\n", duration, sizeStr, createdStr)
+		fmt.Printf("   Format: %s | %d Hz | %d channel(s)\n", recording.Format, recording.SampleRate, recording.Channels)
+		fmt.Printf("   Path: %s\n", recording.FilePath)
+		fmt.Println()
 	}
 
 	// Show directory info
-	homeDir, _ := os.UserHomeDir()
-	recordingsDir := filepath.Join(homeDir, ".note-cli", "recordings")
+	recordingsDir, _ := constants.GetRecordingsDir()
 	fmt.Printf("📁 Recordings directory: %s\n", recordingsDir)
 
 	return nil
@@ -145,11 +144,11 @@ func deleteRecording(args []string) error {
 			if _, err := os.Stat(recording.FilePath); os.IsNotExist(err) {
 				exists = "❌"
 			}
-			
+
 			duration := recording.Duration.Round(time.Second)
 			createdStr := recording.CreatedAt.Format("2006-01-02 15:04")
 			label := fmt.Sprintf("%s %s (ID: %d, %v, %s)", exists, recording.Filename, recording.ID, duration, createdStr)
-			
+
 			options = append(options, huh.NewOption(label, recording.ID))
 		}
 

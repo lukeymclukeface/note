@@ -3,8 +3,8 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"note-cli/internal/constants"
 	"os"
-	"path/filepath"
 )
 
 // Config represents the application configuration
@@ -19,9 +19,9 @@ type Config struct {
 
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
-	homeDir, _ := os.UserHomeDir()
+	notesDir, _ := constants.GetNotesDir()
 	return &Config{
-		NotesDir:     filepath.Join(homeDir, ".noteai", "notes"),
+		NotesDir:     notesDir,
 		Editor:       "nano",
 		DateFormat:   "2006-01-02",
 		DefaultTags:  []string{},
@@ -32,13 +32,14 @@ func DefaultConfig() *Config {
 
 // ConfigDir returns the configuration directory path
 func ConfigDir() string {
-	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, ".noteai")
+	baseDir, _ := constants.GetBaseDir()
+	return baseDir
 }
 
 // ConfigPath returns the configuration file path
 func ConfigPath() string {
-	return filepath.Join(ConfigDir(), "config.json")
+	configPath, _ := constants.GetConfigPath()
+	return configPath
 }
 
 // Load reads the configuration from the config file

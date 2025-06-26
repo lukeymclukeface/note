@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"note-cli/internal/config"
+	"note-cli/internal/constants"
 	"note-cli/internal/database"
 	"os"
 	"os/exec"
@@ -62,12 +63,10 @@ func startRecording() error {
 	}
 
 	// Create recordings directory
-	homeDir, err := os.UserHomeDir()
+	recordingsDir, err := constants.GetRecordingsDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		return fmt.Errorf("failed to get recordings directory: %w", err)
 	}
-
-	recordingsDir := filepath.Join(homeDir, ".note-cli", "recordings")
 	if err := os.MkdirAll(recordingsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create recordings directory: %w", err)
 	}
@@ -85,14 +84,14 @@ func startRecording() error {
 	// Start recording
 	startTime := time.Now()
 	inputDevice := fmt.Sprintf(":%d", microphoneIndex)
-	cmd := exec.Command("ffmpeg", 
-		"-f", "avfoundation",     // Use AVFoundation on macOS
-		"-i", inputDevice,        // Use selected microphone
-		"-ac", "1",              // Mono audio
-		"-ar", "44100",          // Sample rate
+	cmd := exec.Command("ffmpeg",
+		"-f", "avfoundation", // Use AVFoundation on macOS
+		"-i", inputDevice, // Use selected microphone
+		"-ac", "1", // Mono audio
+		"-ar", "44100", // Sample rate
 		"-acodec", "libmp3lame", // MP3 audio codec (LAME encoder)
-		"-ab", "128k",           // Audio bitrate for compression
-		"-y",                    // Overwrite output file if exists
+		"-ab", "128k", // Audio bitrate for compression
+		"-y", // Overwrite output file if exists
 		filepath,
 	)
 
@@ -168,16 +167,16 @@ func startRecording() error {
 
 	// Save recording to database
 	recording := database.Recording{
-		Filename:    filename,
-		FilePath:    filepath,
-		StartTime:   startTime,
-		EndTime:     endTime,
-		Duration:    duration,
-		FileSize:    fileInfo.Size(),
-		Format:      "mp3",
-		SampleRate:  44100, // Sample rate
-		Channels:    1,     // Mono recording
-		CreatedAt:   time.Now(),
+		Filename:   filename,
+		FilePath:   filepath,
+		StartTime:  startTime,
+		EndTime:    endTime,
+		Duration:   duration,
+		FileSize:   fileInfo.Size(),
+		Format:     "mp3",
+		SampleRate: 44100, // Sample rate
+		Channels:   1,     // Mono recording
+		CreatedAt:  time.Now(),
 	}
 
 	if err := database.SaveRecording(cfg.DatabasePath, &recording); err != nil {
@@ -275,7 +274,7 @@ func parseAudioDevices(output string) ([]AudioDevice, error) {
 		}
 
 		// End of section or start of next section
-		if inAudioSection && (strings.Contains(line, "Error opening input") || 
+		if inAudioSection && (strings.Contains(line, "Error opening input") ||
 			strings.TrimSpace(line) == "" && !strings.Contains(line, "[AVFoundation")) {
 			break
 		}
