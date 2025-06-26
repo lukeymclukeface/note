@@ -9,22 +9,24 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	NotesDir    string   `json:"notes_dir"`
-	Editor      string   `json:"editor"`
-	DateFormat  string   `json:"date_format"`
-	DefaultTags []string `json:"default_tags"`
-	OpenAIKey   string   `json:"openai_key"`
+	NotesDir     string   `json:"notes_dir"`
+	Editor       string   `json:"editor"`
+	DateFormat   string   `json:"date_format"`
+	DefaultTags  []string `json:"default_tags"`
+	OpenAIKey    string   `json:"openai_key"`
+	DatabasePath string   `json:"database_path"`
 }
 
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	homeDir, _ := os.UserHomeDir()
 	return &Config{
-		NotesDir:    filepath.Join(homeDir, ".noteai", "notes"),
-		Editor:      "nano",
-		DateFormat:  "2006-01-02",
-		DefaultTags: []string{},
-		OpenAIKey:   "",
+		NotesDir:     filepath.Join(homeDir, ".noteai", "notes"),
+		Editor:       "nano",
+		DateFormat:   "2006-01-02",
+		DefaultTags:  []string{},
+		OpenAIKey:    "",
+		DatabasePath: "",
 	}
 }
 
