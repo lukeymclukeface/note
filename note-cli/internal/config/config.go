@@ -9,26 +9,30 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	NotesDir     string   `json:"notes_dir"`
-	Editor       string   `json:"editor"`
-	DateFormat   string   `json:"date_format"`
-	DefaultTags  []string `json:"default_tags"`
-	OpenAIKey    string   `json:"openai_key"`
-	DatabasePath string   `json:"database_path"`
-	AIModel      string   `json:"ai_model"`
+	NotesDir           string   `json:"notes_dir"`
+	Editor             string   `json:"editor"`
+	DateFormat         string   `json:"date_format"`
+	DefaultTags        []string `json:"default_tags"`
+	OpenAIKey          string   `json:"openai_key"`
+	DatabasePath       string   `json:"database_path"`
+	AIModel            string   `json:"ai_model"`            // Kept for backward compatibility 
+	TranscriptionModel string   `json:"transcription_model"`
+	SummaryModel       string   `json:"summary_model"`
 }
 
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	notesDir, _ := constants.GetNotesDir()
 	return &Config{
-		NotesDir:     notesDir,
-		Editor:       "nano",
-		DateFormat:   "2006-01-02",
-		DefaultTags:  []string{},
-		OpenAIKey:    "",
-		DatabasePath: "",
-		AIModel:      "gpt-3.5-turbo",
+		NotesDir:           notesDir,
+		Editor:             "nano",
+		DateFormat:         "2006-01-02",
+		DefaultTags:        []string{},
+		OpenAIKey:          "",
+		DatabasePath:       "",
+		AIModel:            "gpt-3.5-turbo", // Kept for backward compatibility
+		TranscriptionModel: "whisper-1",
+		SummaryModel:       "gpt-3.5-turbo",
 	}
 }
 
@@ -67,6 +71,18 @@ func Load() (*Config, error) {
 	var config Config
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+	
+	// Migration: Set default values for new fields if they're empty
+	if config.TranscriptionModel == "" {
+		config.TranscriptionModel = "whisper-1"
+	}
+	if config.SummaryModel == "" {
+		config.SummaryModel = "gpt-3.5-turbo"
+		// If AIModel is set and SummaryModel is empty, use AIModel value
+		if config.AIModel != "" {
+			config.SummaryModel = config.AIModel
+		}
 	}
 	
 	return &config, nil

@@ -70,10 +70,10 @@ var configPathCmd = &cobra.Command{
 
 var configModelCmd = &cobra.Command{
 	Use:   "model",
-	Short: "Configure OpenAI model for summaries",
-	Long:  `Query OpenAI for available models and select one for generating summaries.`,
+	Short: "Configure OpenAI models for transcription and summaries",
+	Long:  `Query OpenAI for available models and select models for transcription and summaries.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := configureModel(); err != nil {
+		if err := configureModels(); err != nil {
 			fmt.Printf("❌ Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -116,7 +116,9 @@ func showConfig() {
 		fmt.Printf("OpenAI Key: (not set)\n")
 	}
 	
-	fmt.Printf("AI Model: %s\n", cfg.AIModel)
+	fmt.Printf("AI Model: %s (legacy)\n", cfg.AIModel)
+	fmt.Printf("Transcription Model: %s\n", cfg.TranscriptionModel)
+	fmt.Printf("Summary Model: %s\n", cfg.SummaryModel)
 	fmt.Printf("Database Path: %s\n", cfg.DatabasePath)
 	
 	fmt.Printf("\nConfig file: %s\n", config.ConfigPath())
@@ -183,7 +185,7 @@ type OpenAIModelsResponse struct {
 	Data   []OpenAIModel `json:"data"`
 }
 
-func configureModel() error {
+func configureModels() error {
 	// Load current config to get API key
 	cfg, err := config.Load()
 	if err != nil {
@@ -202,52 +204,87 @@ func configureModel() error {
 		return fmt.Errorf("failed to fetch models: %w", err)
 	}
 
-	// Filter for chat models suitable for summaries
+	// Filter models for different purposes
+	transcriptionModels := filterTranscriptionModels(models)
 	chatModels := filterChatModels(models)
+
+	if len(transcriptionModels) == 0 {
+		return fmt.Errorf("no suitable transcription models found")
+	}
 	if len(chatModels) == 0 {
 		return fmt.Errorf("no suitable chat models found")
 	}
 
 	// Sort models by name for consistent display
+	sort.Slice(transcriptionModels, func(i, j int) bool {
+		return transcriptionModels[i].ID < transcriptionModels[j].ID
+	})
 	sort.Slice(chatModels, func(i, j int) bool {
 		return chatModels[i].ID < chatModels[j].ID
 	})
 
-	// Create options for selection
-	var options []huh.Option[string]
-	for _, model := range chatModels {
-		// Create a descriptive label
+	// Show current models
+	fmt.Printf("Current transcription model: %s\n", cfg.TranscriptionModel)
+	fmt.Printf("Current summary model: %s\n\n", cfg.SummaryModel)
+
+	// Configure transcription model
+	var transcriptionOptions []huh.Option[string]
+	for _, model := range transcriptionModels {
 		label := fmt.Sprintf("%s", model.ID)
 		if model.OwnedBy != "" {
 			label += fmt.Sprintf(" (by %s)", model.OwnedBy)
 		}
-		options = append(options, huh.NewOption(label, model.ID))
+		transcriptionOptions = append(transcriptionOptions, huh.NewOption(label, model.ID))
 	}
 
-	// Show current model
-	fmt.Printf("Current model: %s\n\n", cfg.AIModel)
-
-	// Prompt user to select model
-	var selectedModel string
+	var selectedTranscriptionModel string
 	err = huh.NewSelect[string]().
-		Title("Select an OpenAI model for generating summaries:").
-		Description("Choose a model that will be used for summarizing transcribed audio.").
-		Options(options...).
-		Value(&selectedModel).
+		Title("Select a model for audio transcription:").
+		Description("Choose a model for converting audio to text.").
+		Options(transcriptionOptions...).
+		Value(&selectedTranscriptionModel).
+		Height(10).
+		Run()
+
+	if err != nil {
+		return fmt.Errorf("failed to select transcription model: %w", err)
+	}
+
+	// Configure summary model
+	var summaryOptions []huh.Option[string]
+	for _, model := range chatModels {
+		label := fmt.Sprintf("%s", model.ID)
+		if model.OwnedBy != "" {
+			label += fmt.Sprintf(" (by %s)", model.OwnedBy)
+		}
+		summaryOptions = append(summaryOptions, huh.NewOption(label, model.ID))
+	}
+
+	var selectedSummaryModel string
+	err = huh.NewSelect[string]().
+		Title("Select a model for text summarization:").
+		Description("Choose a model for generating summaries from transcribed text.").
+		Options(summaryOptions...).
+		Value(&selectedSummaryModel).
 		Height(15).
 		Run()
 
 	if err != nil {
-		return fmt.Errorf("failed to select model: %w", err)
+		return fmt.Errorf("failed to select summary model: %w", err)
 	}
 
-	// Update config with selected model
-	cfg.AIModel = selectedModel
+	// Update config with selected models
+	cfg.TranscriptionModel = selectedTranscriptionModel
+	cfg.SummaryModel = selectedSummaryModel
+	// Keep legacy field for backward compatibility
+	cfg.AIModel = selectedSummaryModel
+
 	if err := config.Save(cfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 
-	fmt.Printf("✅ Model updated to: %s\n", selectedModel)
+	fmt.Printf("✅ Transcription model updated to: %s\n", selectedTranscriptionModel)
+	fmt.Printf("✅ Summary model updated to: %s\n", selectedSummaryModel)
 	return nil
 }
 
@@ -281,6 +318,50 @@ func fetchOpenAIModels(apiKey string) ([]OpenAIModel, error) {
 	return modelsResponse.Data, nil
 }
 
+func filterTranscriptionModels(models []OpenAIModel) []OpenAIModel {
+	var transcriptionModels []OpenAIModel
+
+	for _, model := range models {
+		// Filter for audio/speech models suitable for transcription
+		// Include Whisper models and other audio-related models
+		if strings.Contains(model.ID, "whisper") ||
+		   strings.Contains(model.ID, "audio") ||
+		   strings.Contains(model.ID, "speech") ||
+		   strings.Contains(model.ID, "transcribe") {
+			transcriptionModels = append(transcriptionModels, model)
+		}
+	}
+
+	// If no specific audio models found, also include some general models that can handle audio
+	if len(transcriptionModels) == 0 {
+		for _, model := range models {
+			// Add some general models that might work for audio processing
+			if strings.Contains(model.ID, "gpt-4") ||
+			   strings.Contains(model.ID, "gpt-3.5") {
+				transcriptionModels = append(transcriptionModels, model)
+			}
+		}
+	}
+
+	// Always ensure whisper-1 is available as a fallback
+	hasWhisper := false
+	for _, model := range transcriptionModels {
+		if model.ID == "whisper-1" {
+			hasWhisper = true
+			break
+		}
+	}
+	if !hasWhisper {
+		transcriptionModels = append([]OpenAIModel{{
+			ID:      "whisper-1",
+			Object:  "model",
+			OwnedBy: "openai",
+		}}, transcriptionModels...)
+	}
+
+	return transcriptionModels
+}
+
 func filterChatModels(models []OpenAIModel) []OpenAIModel {
 	var chatModels []OpenAIModel
 
@@ -288,10 +369,10 @@ func filterChatModels(models []OpenAIModel) []OpenAIModel {
 		// Filter for chat completion models
 		// Include GPT models that are suitable for chat completions
 		if strings.Contains(model.ID, "gpt-") && 
-		   !strings.Contains(model.ID, "instruct") &&
-		   !strings.Contains(model.ID, "embedding") &&
-		   !strings.Contains(model.ID, "whisper") &&
-		   !strings.Contains(model.ID, "tts") &&
+		   !strings.Contains(model.ID, "instruct")&&
+		   !strings.Contains(model.ID, "embedding")&&
+		   !strings.Contains(model.ID, "whisper")&&
+		   !strings.Contains(model.ID, "tts")&&
 		   !strings.Contains(model.ID, "dall-e") {
 			chatModels = append(chatModels, model)
 		}

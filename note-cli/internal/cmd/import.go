@@ -236,6 +236,18 @@ func copyFile(src, dst string) error {
 }
 
 func transcribeFile(filePath, apiKey string) (string, error) {
+	// Load config to get the transcription model
+	cfg, err := config.Load()
+	if err != nil {
+		return "", fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Use configured transcription model or fallback to default
+	transcriptionModel := cfg.TranscriptionModel
+	if transcriptionModel == "" {
+		transcriptionModel = "whisper-1"
+	}
+
 	url := "https://api.openai.com/v1/audio/transcriptions"
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -256,7 +268,7 @@ func transcribeFile(filePath, apiKey string) (string, error) {
 		return "", err
 	}
 
-	err = writer.WriteField("model", "whisper-1")
+	err = writer.WriteField("model", transcriptionModel)
 	if err != nil {
 		return "", err
 	}
@@ -296,16 +308,20 @@ func transcribeFile(filePath, apiKey string) (string, error) {
 }
 
 func summarizeText(text, apiKey string) (string, error) {
-	// Load config to get the AI model
+	// Load config to get the summary model
 	cfg, err := config.Load()
 	if err != nil {
 		return "", fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Use configured model or fallback to default
-	model := cfg.AIModel
+	// Use configured summary model or fallback to default
+	model := cfg.SummaryModel
 	if model == "" {
-		model = "gpt-3.5-turbo"
+		// Fallback to legacy field, then to default
+		model = cfg.AIModel
+		if model == "" {
+			model = "gpt-3.5-turbo"
+		}
 	}
 
 	url := "https://api.openai.com/v1/chat/completions"
