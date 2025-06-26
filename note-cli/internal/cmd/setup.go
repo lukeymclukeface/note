@@ -20,7 +20,7 @@ var setupCmd = &cobra.Command{
 		fmt.Println("🔧 Setting up note...")
 		fmt.Println("====================")
 		fmt.Println()
-		
+
 		// Run interactive setup
 		runInteractiveSetup()
 	},
@@ -30,33 +30,21 @@ func init() {
 	rootCmd.AddCommand(setupCmd)
 }
 
-func checkFFmpeg() bool {
-	_, err := exec.LookPath("ffmpeg")
-	if err != nil {
-		fmt.Println("❌ ffmpeg is not installed.")
-		fmt.Println("   Install with: brew install ffmpeg")
-		return false
-	} else {
-		fmt.Println("✅ ffmpeg is installed.")
-		return true
-	}
-}
 
 func runInteractiveSetup() {
 	// Check brew installation first
 	brewInstalled := checkBrew()
-	
+
 	// Check dependencies
 	ffmpegInstalled := checkFFmpegInstalled()
-	
+
 	// Load current config
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Printf("❌ Error loading configuration: %v\n", err)
 		return
 	}
-	
-	
+
 	// Handle ffmpeg installation
 	if !ffmpegInstalled {
 		if brewInstalled {
@@ -69,12 +57,12 @@ func runInteractiveSetup() {
 						Value(&installFFmpeg),
 				),
 			)
-			
+
 			if err := form.Run(); err != nil {
 				fmt.Printf("Error: %v\n", err)
 				return
 			}
-			
+
 			if installFFmpeg {
 				fmt.Println("📦 Installing ffmpeg...")
 				if err := installPackageWithBrew("ffmpeg"); err != nil {
@@ -93,11 +81,11 @@ func runInteractiveSetup() {
 	} else {
 		fmt.Println("✅ FFmpeg is already installed.")
 	}
-	
+
 	// Handle missing configuration
 	if cfg.OpenAIKey == "" {
 		fmt.Println()
-		
+
 		var provideKey bool
 		form := huh.NewForm(
 			huh.NewGroup(
@@ -107,12 +95,12 @@ func runInteractiveSetup() {
 					Value(&provideKey),
 			),
 		)
-		
+
 		if err := form.Run(); err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return
 		}
-		
+
 		if provideKey {
 			var apiKey string
 			form := huh.NewForm(
@@ -121,7 +109,7 @@ func runInteractiveSetup() {
 						Title("Enter your OpenAI API key:").
 						Description("You can get this from https://platform.openai.com/api-keys").
 						Value(&apiKey).
-						Password(true).
+						EchoMode(huh.EchoModePassword).
 						Validate(func(str string) error {
 							if strings.TrimSpace(str) == "" {
 								return fmt.Errorf("API key cannot be empty")
@@ -133,19 +121,19 @@ func runInteractiveSetup() {
 						}),
 				),
 			)
-			
+
 			if err := form.Run(); err != nil {
 				fmt.Printf("Error: %v\n", err)
 				return
 			}
-			
+
 			// Save the API key
 			cfg.OpenAIKey = strings.TrimSpace(apiKey)
 			if err := config.Save(cfg); err != nil {
 				fmt.Printf("❌ Error saving configuration: %v\n", err)
 				return
 			}
-			
+
 			fmt.Println("✅ OpenAI API key saved successfully!")
 		} else {
 			fmt.Println("⚠️  OpenAI API key not configured. You can set it later with: note config set openai_key <your-key>")
@@ -153,11 +141,11 @@ func runInteractiveSetup() {
 	} else {
 		fmt.Println("✅ OpenAI API key is already configured.")
 	}
-	
+
 	// Handle database setup
 	if cfg.DatabasePath == "" {
 		fmt.Println()
-		
+
 		var setupDb bool
 		form := huh.NewForm(
 			huh.NewGroup(
@@ -167,12 +155,12 @@ func runInteractiveSetup() {
 					Value(&setupDb),
 			),
 		)
-		
+
 		if err := form.Run(); err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return
 		}
-		
+
 		if setupDb {
 			// Use default database path
 			homeDir, err := os.UserHomeDir()
@@ -180,22 +168,22 @@ func runInteractiveSetup() {
 				fmt.Printf("❌ Error getting home directory: %v\n", err)
 				return
 			}
-			
+
 			dbPath := homeDir + "/.note-cli/notes.db"
-			
+
 			// Run database setup
 			if err := setupDatabase(dbPath); err != nil {
 				fmt.Printf("❌ Error setting up database: %v\n", err)
 				return
 			}
-			
+
 			// Save database path to config
 			cfg.DatabasePath = dbPath
 			if err := config.Save(cfg); err != nil {
 				fmt.Printf("❌ Error saving configuration: %v\n", err)
 				return
 			}
-			
+
 			fmt.Println("✅ Database setup completed!")
 		} else {
 			fmt.Println("⚠️  Database not configured. You can set it up later with: note setup")
@@ -203,7 +191,7 @@ func runInteractiveSetup() {
 	} else {
 		fmt.Println("✅ Database is already configured.")
 	}
-	
+
 	// Final status
 	fmt.Println()
 
@@ -241,12 +229,12 @@ func installPackageWithBrew(packageName string) error {
 
 func setupDatabase(dbPath string) error {
 	fmt.Printf("🗄️  Setting up database at %s...\n", dbPath)
-	
+
 	// Initialize the database
 	if err := database.Initialize(dbPath); err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
-	
+
 	fmt.Println("✅ Database initialized successfully!")
 	return nil
 }
