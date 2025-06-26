@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
@@ -28,12 +29,15 @@ var importCmd = &cobra.Command{
 	Long: `Import an audio file, convert it to MP3 if needed, add it to the recordings database, 
 transcribe it using OpenAI's Whisper API, create a summary, and save as a note.
 
+If no file is specified, you'll be presented with a list of compatible audio files 
+in the current directory to choose from.
+
 Supported audio formats: mp3, wav, m4a, ogg, flac
 
 Requires:
 - OpenAI API key configured (run 'note setup')
 - ffmpeg installed for format conversion`,
-	Args: cobra.ExactArgs(1),
+Args: cobra.MaximumNArgs(1),
 	RunE: importFile,
 }
 
@@ -42,7 +46,44 @@ func init() {
 }
 
 func importFile(cmd *cobra.Command, args []string) error {
-	filePath := args[0]
+var filePath string
+
+	if len(args) == 1 {
+		filePath = args[0]
+	} else {
+		// No argument provided, find compatible files in the current directory
+		var files []string
+		extensions := []string{"*.mp3", "*.wav", "*.m4a", "*.ogg", "*.flac"}
+		
+		for _, ext := range extensions {
+			matches, err := filepath.Glob(ext)
+			if err != nil {
+				continue
+			}
+			files = append(files, matches...)
+		}
+		
+		if len(files) == 0 {
+			return fmt.Errorf("no compatible audio files found in the current directory")
+		}
+		
+		// Create options for selection
+		var options []huh.Option[string]
+		for _, file := range files {
+			options = append(options, huh.NewOption(file, file))
+		}
+		
+		selectField := huh.NewSelect[string]().
+			Title("Select a file to import:").
+			Options(options...).
+			Value(&filePath)
+		
+		form := huh.NewForm(huh.NewGroup(selectField))
+		
+		if err := form.Run(); err != nil {
+			return fmt.Errorf("file selection cancelled")
+		}
+	}
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -157,7 +198,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 
 	// Create a metadata note that references the files
 	title := fmt.Sprintf("Audio Import: %s", originalFilename)
-	content := fmt.Sprintf("Audio file imported and processed.\n\nFiles:\n- Audio: %s\n- Transcription: %s\n- Summary: %s\n\nFolder: %s", 
+	content := fmt.Sprintf("Audio file imported and processed.\n\nFiles:\n- Audio: %s\n- Transcription: %s\n- Summary: %s\n\nFolder: %s",
 		filename, "transcription.md", "summary.md", folderName)
 	tags := "imported,audio,metadata"
 
@@ -415,7 +456,7 @@ func transcribeFileWithSpinner(filePath, apiKey string) (string, error) {
 		return transcribeFile(filePath, apiKey)
 	}
 
-	result, err := runTaskWithSpinner("🎙️  Transcribing audio using OpenAI Whisper", task)
+	result, err := runTaskWithSpinner("🎙️  Transcribing audio using OpenAI", task)
 	if err != nil {
 		return "", err
 	}
