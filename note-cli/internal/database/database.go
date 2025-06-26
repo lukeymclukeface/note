@@ -275,3 +275,62 @@ func ListRecordings(dbPath string) ([]Recording, error) {
 
 	return recordings, nil
 }
+
+// DeleteRecording deletes a recording from the database by ID
+func DeleteRecording(dbPath string, recordingID int) (*Recording, error) {
+	db, err := Connect(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	defer db.Close()
+
+	// Ensure recordings table exists
+	if err := ensureRecordingsTable(db); err != nil {
+		return nil, err
+	}
+
+	// First, get the recording details before deletion
+	var recording Recording
+	var durationNanos int64
+	querySelect := `SELECT id, filename, file_path, start_time, end_time, duration, file_size, format, sample_rate, channels, created_at 
+					FROM recordings WHERE id = ?`
+	
+	err = db.QueryRow(querySelect, recordingID).Scan(
+		&recording.ID,
+		&recording.Filename,
+		&recording.FilePath,
+		&recording.StartTime,
+		&recording.EndTime,
+		&durationNanos,
+		&recording.FileSize,
+		&recording.Format,
+		&recording.SampleRate,
+		&recording.Channels,
+		&recording.CreatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("recording with ID %d not found", recordingID)
+		}
+		return nil, fmt.Errorf("failed to get recording: %w", err)
+	}
+	recording.Duration = time.Duration(durationNanos)
+
+	// Delete the recording from database
+	queryDelete := `DELETE FROM recordings WHERE id = ?`
+	result, err := db.Exec(queryDelete, recordingID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete recording: %w", err)
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return nil, fmt.Errorf("recording with ID %d not found", recordingID)
+	}
+
+	return &recording, nil
+}
