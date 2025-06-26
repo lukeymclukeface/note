@@ -15,6 +15,7 @@ type Config struct {
 	DefaultTags  []string `json:"default_tags"`
 	OpenAIKey    string   `json:"openai_key"`
 	DatabasePath string   `json:"database_path"`
+	AIModel      string   `json:"ai_model"`
 }
 
 // DefaultConfig returns the default configuration
@@ -27,6 +28,7 @@ func DefaultConfig() *Config {
 		DefaultTags:  []string{},
 		OpenAIKey:    "",
 		DatabasePath: "",
+		AIModel:      "gpt-3.5-turbo",
 	}
 }
 

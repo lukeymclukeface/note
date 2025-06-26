@@ -296,9 +296,21 @@ func transcribeFile(filePath, apiKey string) (string, error) {
 }
 
 func summarizeText(text, apiKey string) (string, error) {
+	// Load config to get the AI model
+	cfg, err := config.Load()
+	if err != nil {
+		return "", fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Use configured model or fallback to default
+	model := cfg.AIModel
+	if model == "" {
+		model = "gpt-3.5-turbo"
+	}
+
 	url := "https://api.openai.com/v1/chat/completions"
 	requestBody, err := json.Marshal(map[string]interface{}{
-		"model": "gpt-3.5-turbo",
+		"model": model,
 		"messages": []map[string]interface{}{
 			{
 				"role":    "system",
