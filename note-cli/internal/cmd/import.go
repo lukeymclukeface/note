@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
@@ -55,11 +57,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 	fmt.Println("🎵 Processing audio file...")
 
 	// Convert to MP3 if necessary
-	ext := strings.ToLower(filepath.Ext(filePath))
-	if ext != ".mp3" {
-		fmt.Printf("🔄 Converting %s to MP3...\n", ext)
-	}
-	mp3Path, err := convertToMP3(filePath)
+	mp3Path, err := convertToMP3WithSpinner(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to convert file to MP3: %w", err)
 	}
@@ -102,8 +100,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 	// Copy MP3 to the new directory
 	filename := filepath.Base(mp3Path)
 	newFilePath := filepath.Join(destinationDir, filename)
-	fmt.Println("📁 Copying MP3 file to notes directory...")
-	if err := copyFile(mp3Path, newFilePath); err != nil {
+	if err := copyFileWithSpinner(mp3Path, newFilePath); err != nil {
 		return fmt.Errorf("failed to copy MP3 file: %w", err)
 	}
 
@@ -128,20 +125,17 @@ func importFile(cmd *cobra.Command, args []string) error {
 		CreatedAt:  now,
 	}
 
-	fmt.Println("💾 Saving recording metadata to database...")
-	if err := database.SaveRecording(cfg.DatabasePath, &recording); err != nil {
+	if err := saveRecordingWithSpinner(cfg.DatabasePath, &recording); err != nil {
 		return fmt.Errorf("failed to save recording: %w", err)
 	}
 
 	// Transcribe and summarize
-	fmt.Println("🎙️  Transcribing audio using OpenAI Whisper...")
-	transcript, err := transcribeFile(newFilePath, cfg.OpenAIKey)
+	transcript, err := transcribeFileWithSpinner(newFilePath, cfg.OpenAIKey)
 	if err != nil {
 		return fmt.Errorf("failed to transcribe file: %w", err)
 	}
 
-	fmt.Println("📝 Creating summary using OpenAI...")
-	summary, err := summarizeText(transcript, cfg.OpenAIKey)
+	summary, err := summarizeTextWithSpinner(transcript, cfg.OpenAIKey)
 	if err != nil {
 		return fmt.Errorf("failed to summarize transcription: %w", err)
 	}
@@ -150,18 +144,8 @@ func importFile(cmd *cobra.Command, args []string) error {
 	transcriptionPath := filepath.Join(destinationDir, "transcription.md")
 	summaryPath := filepath.Join(destinationDir, "summary.md")
 
-	fmt.Println("📝 Saving transcription and summary as markdown files...")
-
-	// Write transcription file
-	transcriptionContent := fmt.Sprintf("# Transcription\n\n%s\n", transcript)
-	if err := os.WriteFile(transcriptionPath, []byte(transcriptionContent), 0644); err != nil {
-		return fmt.Errorf("failed to write transcription file: %w", err)
-	}
-
-	// Write summary file
-	summaryContent := fmt.Sprintf("# Summary\n\n%s\n", summary)
-	if err := os.WriteFile(summaryPath, []byte(summaryContent), 0644); err != nil {
-		return fmt.Errorf("failed to write summary file: %w", err)
+	if err := saveMarkdownFilesWithSpinner(transcript, summary, transcriptionPath, summaryPath); err != nil {
+		return fmt.Errorf("failed to save markdown files: %w", err)
 	}
 
 	// Connect to database for note creation with metadata only
@@ -177,8 +161,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 		filename, "transcription.md", "summary.md", folderName)
 	tags := "imported,audio,metadata"
 
-	fmt.Println("📋 Saving metadata note to database...")
-	if _, err := database.CreateNote(db, title, content, tags); err != nil {
+	if err := createNoteWithSpinner(db, title, content, tags); err != nil {
 		return fmt.Errorf("failed to save metadata note: %w", err)
 	}
 
@@ -317,11 +300,7 @@ func summarizeText(text, apiKey string) (string, error) {
 	// Use configured summary model or fallback to default
 	model := cfg.SummaryModel
 	if model == "" {
-		// Fallback to legacy field, then to default
-		model = cfg.AIModel
-		if model == "" {
-			model = "gpt-3.5-turbo"
-		}
+		model = "gpt-3.5-turbo"
 	}
 
 	url := "https://api.openai.com/v1/chat/completions"
@@ -389,4 +368,144 @@ func summarizeText(text, apiKey string) (string, error) {
 	}
 
 	return strings.TrimSpace(content), nil
+}
+
+// Function to run a task with a simple spinner
+func runTaskWithSpinner(message string, task func() (interface{}, error)) (interface{}, error) {
+	// Channel to signal completion
+	done := make(chan struct{})
+	var result interface{}
+	var taskErr error
+
+	// Start the task in a goroutine
+	go func() {
+		defer close(done)
+		result, taskErr = task()
+	}()
+
+	// Spinner characters
+	spinnerChars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	spinnerIndex := 0
+
+	// Show spinner while task is running
+	for {
+		select {
+		case <-done:
+			// Clear the spinner line
+			fmt.Print("\r\033[K")
+			if taskErr != nil {
+				fmt.Printf("❌ %s failed: %v\n", message, taskErr)
+				return nil, taskErr
+			}
+			fmt.Printf("✅ %s completed!\n", message)
+			return result, nil
+		default:
+			// Update spinner
+			style := lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+			fmt.Printf("\r%s %s", spinnerChars[spinnerIndex], style.Render(message))
+			spinnerIndex = (spinnerIndex + 1) % len(spinnerChars)
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+}
+
+// Wrapper functions for transcription and summarization with spinner
+func transcribeFileWithSpinner(filePath, apiKey string) (string, error) {
+	task := func() (interface{}, error) {
+		return transcribeFile(filePath, apiKey)
+	}
+
+	result, err := runTaskWithSpinner("🎙️  Transcribing audio using OpenAI Whisper", task)
+	if err != nil {
+		return "", err
+	}
+
+	return result.(string), nil
+}
+
+func summarizeTextWithSpinner(text, apiKey string) (string, error) {
+	task := func() (interface{}, error) {
+		return summarizeText(text, apiKey)
+	}
+
+	result, err := runTaskWithSpinner("📝 Creating summary using OpenAI", task)
+	if err != nil {
+		return "", err
+	}
+
+	return result.(string), nil
+}
+
+// Wrapper function for MP3 conversion with spinner
+func convertToMP3WithSpinner(filePath string) (string, error) {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	if ext == ".mp3" {
+		return filePath, nil // Already an MP3, no conversion needed
+	}
+
+	task := func() (interface{}, error) {
+		return convertToMP3(filePath)
+	}
+
+	result, err := runTaskWithSpinner(fmt.Sprintf("🔄 Converting %s to MP3", ext), task)
+	if err != nil {
+		return "", err
+	}
+
+	return result.(string), nil
+}
+
+// Wrapper function for file copying with spinner
+func copyFileWithSpinner(src, dst string) error {
+	task := func() (interface{}, error) {
+		err := copyFile(src, dst)
+		return nil, err
+	}
+
+	_, err := runTaskWithSpinner("📁 Copying MP3 file to notes directory", task)
+	return err
+}
+
+// Wrapper function for saving recording with spinner
+func saveRecordingWithSpinner(dbPath string, recording *database.Recording) error {
+	task := func() (interface{}, error) {
+		err := database.SaveRecording(dbPath, recording)
+		return nil, err
+	}
+
+	_, err := runTaskWithSpinner("💾 Saving recording metadata to database", task)
+	return err
+}
+
+// Wrapper function for saving markdown files with spinner
+func saveMarkdownFilesWithSpinner(transcript, summary, transcriptionPath, summaryPath string) error {
+	task := func() (interface{}, error) {
+		// Write transcription file
+		transcriptionContent := fmt.Sprintf("# Transcription\n\n%s\n", transcript)
+		if err := os.WriteFile(transcriptionPath, []byte(transcriptionContent), 0644); err != nil {
+			return nil, fmt.Errorf("failed to write transcription file: %w", err)
+		}
+
+		// Write summary file
+		summaryContent := fmt.Sprintf("# Summary\n\n%s\n", summary)
+		if err := os.WriteFile(summaryPath, []byte(summaryContent), 0644); err != nil {
+			return nil, fmt.Errorf("failed to write summary file: %w", err)
+		}
+
+		return nil, nil
+	}
+
+	_, err := runTaskWithSpinner("📝 Saving transcription and summary as markdown files", task)
+	return err
+}
+
+// Wrapper function for creating note with spinner
+func createNoteWithSpinner(db *sql.DB, title, content, tags string) error {
+	task := func() (interface{}, error) {
+		_, err := database.CreateNote(db, title, content, tags)
+		return nil, err
+	}
+
+	_, err := runTaskWithSpinner("📋 Saving metadata note to database", task)
+	return err
 }

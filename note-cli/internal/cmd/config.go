@@ -116,7 +116,6 @@ func showConfig() {
 		fmt.Printf("OpenAI Key: (not set)\n")
 	}
 	
-	fmt.Printf("AI Model: %s (legacy)\n", cfg.AIModel)
 	fmt.Printf("Transcription Model: %s\n", cfg.TranscriptionModel)
 	fmt.Printf("Summary Model: %s\n", cfg.SummaryModel)
 	fmt.Printf("Database Path: %s\n", cfg.DatabasePath)
@@ -276,8 +275,6 @@ func configureModels() error {
 	// Update config with selected models
 	cfg.TranscriptionModel = selectedTranscriptionModel
 	cfg.SummaryModel = selectedSummaryModel
-	// Keep legacy field for backward compatibility
-	cfg.AIModel = selectedSummaryModel
 
 	if err := config.Save(cfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)

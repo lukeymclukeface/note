@@ -15,7 +15,6 @@ type Config struct {
 	DefaultTags        []string `json:"default_tags"`
 	OpenAIKey          string   `json:"openai_key"`
 	DatabasePath       string   `json:"database_path"`
-	AIModel            string   `json:"ai_model"`            // Kept for backward compatibility 
 	TranscriptionModel string   `json:"transcription_model"`
 	SummaryModel       string   `json:"summary_model"`
 }
@@ -30,7 +29,6 @@ func DefaultConfig() *Config {
 		DefaultTags:        []string{},
 		OpenAIKey:          "",
 		DatabasePath:       "",
-		AIModel:            "gpt-3.5-turbo", // Kept for backward compatibility
 		TranscriptionModel: "whisper-1",
 		SummaryModel:       "gpt-3.5-turbo",
 	}
@@ -79,10 +77,6 @@ func Load() (*Config, error) {
 	}
 	if config.SummaryModel == "" {
 		config.SummaryModel = "gpt-3.5-turbo"
-		// If AIModel is set and SummaryModel is empty, use AIModel value
-		if config.AIModel != "" {
-			config.SummaryModel = config.AIModel
-		}
 	}
 	
 	return &config, nil
