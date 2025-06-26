@@ -8,13 +8,13 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "note-cli",
+	Use:   "note",
 	Short: "A simple note-taking CLI application",
 	Long: `Note CLI is a command-line application for managing notes.
 You can create, list, edit, and delete notes from the command line.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Welcome to Note CLI!")
-		fmt.Println("Use 'note-cli help' to see available commands.")
+		fmt.Println("Use 'note help' to see available commands.")
 	},
 }
 

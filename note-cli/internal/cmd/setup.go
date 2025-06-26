@@ -10,11 +10,11 @@ import (
 
 var setupCmd = &cobra.Command{
 	Use:   "setup",
-	Short: "Setup the note-cli application",
-	Long:  `Check and configure the dependencies required for the note-cli application, including ffmpeg and OpenAI API key.`,
+	Short: "Setup the note application",
+	Long:  `Check and configure the dependencies required for the note application, including ffmpeg and OpenAI API key.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Setting up note-cli...")
-		fmt.Println("=====================")
+		fmt.Println("Setting up note...")
+		fmt.Println("==================")
 		
 		ffmpegOK := checkFFmpeg()
 		openaiOK := checkOpenAIKey()
@@ -53,7 +53,7 @@ func checkOpenAIKey() bool {
 
 	if cfg.OpenAIKey == "" {
 		fmt.Println("❌ OpenAI API key is missing.")
-		fmt.Println("   Set with: note-cli config set openai_key <your-key>")
+		fmt.Println("   Set with: note config set openai_key <your-key>")
 		return false
 	} else {
 		fmt.Println("✅ OpenAI API key is configured.")

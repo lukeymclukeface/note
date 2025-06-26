@@ -11,7 +11,7 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage application configuration",
-	Long: `Manage the note-cli application configuration stored in ~/.noteai/config.json.
+	Long: `Manage the note application configuration stored in ~/.noteai/config.json.
 Use subcommands to view, edit, or reset configuration settings.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Show current config when no subcommand is provided

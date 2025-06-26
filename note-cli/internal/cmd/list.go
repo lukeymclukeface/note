@@ -16,7 +16,7 @@ creation dates, and preview of content.`,
 		fmt.Println("==================")
 		
 		// TODO: Implement actual note retrieval logic
-		fmt.Println("No notes found. Use 'note-cli create' to add your first note!")
+		fmt.Println("No notes found. Use 'note create' to add your first note!")
 	},
 }
 
