@@ -27,18 +27,21 @@ import (
 
 var importCmd = &cobra.Command{
 	Use:   "import [file]",
-	Short: "Import and transcribe an audio file",
-	Long: `Import an audio file, convert it to MP3 if needed, add it to the recordings database, 
-transcribe it using OpenAI's Whisper API, create a summary, and save as a note.
+	Short: "Import and process an audio or text file",
+	Long: `Import and process a file. For audio files, convert to MP3 if needed, add to recordings database, 
+transcribe using OpenAI's Whisper API, create a summary, and save as a note.
+For text files, read the content, create a summary, and save as a note.
 
-If no file is specified, you'll be presented with a list of compatible audio files 
+If no file is specified, you'll be presented with a list of compatible files 
 in the current directory to choose from.
 
-Supported audio formats: mp3, wav, m4a, ogg, flac
+Supported formats:
+- Audio: mp3, wav, m4a, ogg, flac
+- Text: md, txt
 
 Requires:
 - OpenAI API key configured (run 'note setup')
-- ffmpeg installed for format conversion`,
+- ffmpeg installed for audio format conversion`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: importFile,
 }
@@ -55,7 +58,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 	} else {
 		// No argument provided, find compatible files in the current directory
 		var files []string
-		extensions := []string{"*.mp3", "*.wav", "*.m4a", "*.ogg", "*.flac"}
+		extensions := []string{"*.mp3", "*.wav", "*.m4a", "*.ogg", "*.flac", "*.md", "*.txt"}
 
 		for _, ext := range extensions {
 			matches, err := filepath.Glob(ext)
@@ -66,7 +69,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 		}
 
 		if len(files) == 0 {
-			return fmt.Errorf("no compatible audio files found in the current directory")
+			return fmt.Errorf("no compatible files found in the current directory. Supported formats: mp3, wav, m4a, ogg, flac, md, txt")
 		}
 
 		// Create options for selection
@@ -92,11 +95,106 @@ func importFile(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("file does not exist: %s", filePath)
 	}
 
-	// Validate file
-	if !isValidAudioFile(filePath) {
-		return fmt.Errorf("invalid audio file format. Supported formats: mp3, wav, m4a, ogg, flac. Got: %s", filepath.Ext(filePath))
+	// Determine file type and process accordingly
+	if isValidTextFile(filePath) {
+		return processTextFile(filePath)
+	} else if isValidAudioFile(filePath) {
+		return processAudioFile(filePath)
+	} else {
+	return fmt.Errorf("invalid file format. Supported formats: mp3, wav, m4a, ogg, flac, md, txt. Got: %s", filepath.Ext(filePath))
+	}
+}
+
+func isValidAudioFile(path string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	return ext == ".mp3" || ext == ".wav" || ext == ".m4a" || ext == ".ogg" || ext == ".flac"
+}
+
+func isValidTextFile(path string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	return ext == ".md" || ext == ".txt"
+}
+
+func convertToMP3(filePath string) (string, error) {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	if ext == ".mp3" {
+		return filePath, nil // Already an MP3
 	}
 
+	outputPath := strings.TrimSuffix(filePath, ext) + ".mp3"
+	cmd := exec.Command("ffmpeg",
+		"-i", filePath,
+		"-acodec", "libmp3lame",
+		"-ab", "128k",
+		"-ar", "44100", // Standardize sample rate
+		"-ac", "1", // Convert to mono
+		"-y", // Overwrite output file
+		outputPath)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("FFmpeg error output: %s\n", stderr.String())
+		return "", fmt.Errorf("ffmpeg conversion failed: %w", err)
+	}
+
+	return outputPath, nil
+}
+
+func processTextFile(filePath string) error {
+	// Load config
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	if cfg.OpenAIKey == "" {
+		return fmt.Errorf("OpenAI API key not configured. Please run 'note setup' first")
+	}
+
+	// Read text content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read text file: %w", err)
+	}
+
+	text := string(content)
+
+	// Summarize text
+	summary, err := summarizeTextWithSpinner(text, cfg.OpenAIKey)
+	if err != nil {
+		return fmt.Errorf("failed to summarize text: %w", err)
+	}
+
+	// Create notes and save in notes directory
+	notesDir, err := constants.GetNotesDir()
+	if err != nil {
+		return fmt.Errorf("failed to get notes directory: %w", err)
+	}
+
+	originalFilename := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
+	folderName := fmt.Sprintf("%s_summary_%s", originalFilename, time.Now().Format("20060102_150405"))
+	destinationDir := filepath.Join(notesDir, folderName)
+
+	if err := os.MkdirAll(destinationDir, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	// Save the summary as a markdown file
+	summaryPath := filepath.Join(destinationDir, "summary.md")
+	summaryContent := fmt.Sprintf("# Summary\n\n%s\n", summary)
+	if err := os.WriteFile(summaryPath, []byte(summaryContent), 0644); err != nil {
+		return fmt.Errorf("failed to write summary file: %w", err)
+	}
+
+	fmt.Printf("✅ Text file '%s' successfully processed and summarized:\n", filePath)
+	fmt.Printf("   📝 Summary saved at: %s\n", summaryPath)
+
+	return nil
+}
+
+func processAudioFile(filePath string) error {
 	fmt.Println("🎵 Processing audio file...")
 
 	// Convert to MP3 if necessary
@@ -217,38 +315,6 @@ func importFile(cmd *cobra.Command, args []string) error {
 	fmt.Printf("   📝 Transcribed and summarized\n")
 	fmt.Printf("   📋 Note created: %s\n", title)
 	return nil
-}
-
-func isValidAudioFile(path string) bool {
-	ext := strings.ToLower(filepath.Ext(path))
-	return ext == ".mp3" || ext == ".wav" || ext == ".m4a" || ext == ".ogg" || ext == ".flac"
-}
-
-func convertToMP3(filePath string) (string, error) {
-	ext := strings.ToLower(filepath.Ext(filePath))
-	if ext == ".mp3" {
-		return filePath, nil // Already an MP3
-	}
-
-	outputPath := strings.TrimSuffix(filePath, ext) + ".mp3"
-	cmd := exec.Command("ffmpeg",
-		"-i", filePath,
-		"-acodec", "libmp3lame",
-		"-ab", "128k",
-		"-ar", "44100", // Standardize sample rate
-		"-ac", "1", // Convert to mono
-		"-y", // Overwrite output file
-		outputPath)
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("FFmpeg error output: %s\n", stderr.String())
-		return "", fmt.Errorf("ffmpeg conversion failed: %w", err)
-	}
-
-	return outputPath, nil
 }
 
 func copyFile(src, dst string) error {
