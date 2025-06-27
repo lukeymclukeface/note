@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -82,7 +83,7 @@ var configModelCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(configCmd)
-	
+
 	// Add subcommands
 	configCmd.AddCommand(configShowCmd)
 	configCmd.AddCommand(configSetCmd)
@@ -97,30 +98,43 @@ func showConfig() {
 		fmt.Printf("Error loading configuration: %v\n", err)
 		return
 	}
-	
-	fmt.Println("Current Configuration:")
-	fmt.Println("=====================")
-	fmt.Printf("Notes Directory: %s\n", cfg.NotesDir)
-	fmt.Printf("Editor: %s\n", cfg.Editor)
-	fmt.Printf("Date Format: %s\n", cfg.DateFormat)
-	fmt.Printf("Default Tags: %s\n", strings.Join(cfg.DefaultTags, ", "))
-	
+
+	// Color styling
+	// blue := color.New(color.FgBlue, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
+	gray := color.New(color.FgHiBlack).SprintFunc()
+
+	// fmt.Printf("%s\n\n", blue("📋 Current Configuration"))
+	fmt.Println("")
+
+	// Define consistent field width for alignment
+	fieldWidth := 22
+
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Editor:")), green(cfg.Editor))
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Date Format:")), green(cfg.DateFormat))
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Default Tags:")), green(strings.Join(cfg.DefaultTags, ", ")))
+
 	// Mask the OpenAI key for security
+	var keyDisplay string
 	if cfg.OpenAIKey != "" {
 		if len(cfg.OpenAIKey) > 8 {
-			fmt.Printf("OpenAI Key: %s...%s\n", cfg.OpenAIKey[:4], cfg.OpenAIKey[len(cfg.OpenAIKey)-4:])
+			keyDisplay = cfg.OpenAIKey[:4] + "..." + cfg.OpenAIKey[len(cfg.OpenAIKey)-4:]
 		} else {
-			fmt.Printf("OpenAI Key: %s\n", strings.Repeat("*", len(cfg.OpenAIKey)))
+			keyDisplay = strings.Repeat("*", len(cfg.OpenAIKey))
 		}
 	} else {
-		fmt.Printf("OpenAI Key: (not set)\n")
+		keyDisplay = gray("(not set)")
 	}
-	
-	fmt.Printf("Transcription Model: %s\n", cfg.TranscriptionModel)
-	fmt.Printf("Summary Model: %s\n", cfg.SummaryModel)
-	fmt.Printf("Database Path: %s\n", cfg.DatabasePath)
-	
-	fmt.Printf("\nConfig file: %s\n", config.ConfigPath())
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "OpenAI Key:")), green(keyDisplay))
+
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Transcription Model:")), green(cfg.TranscriptionModel))
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Summary Model:")), green(cfg.SummaryModel))
+
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Notes Directory:")), green(cfg.NotesDir))
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Database Path:")), green(cfg.DatabasePath))
+
+	fmt.Printf("\n%s %s\n", gray("Config file:"), gray(config.ConfigPath()))
 }
 
 func setConfig(key, value string) {
@@ -129,7 +143,7 @@ func setConfig(key, value string) {
 		fmt.Printf("Error loading configuration: %v\n", err)
 		return
 	}
-	
+
 	switch key {
 	case "notes_dir":
 		cfg.NotesDir = value
@@ -151,12 +165,12 @@ func setConfig(key, value string) {
 		fmt.Println("Available keys: notes_dir, editor, date_format, default_tags, openai_key")
 		return
 	}
-	
+
 	if err := config.Save(cfg); err != nil {
 		fmt.Printf("Error saving configuration: %v\n", err)
 		return
 	}
-	
+
 	fmt.Printf("Configuration updated: %s = %s\n", key, value)
 }
 
@@ -166,7 +180,7 @@ func resetConfig() {
 		fmt.Printf("Error resetting configuration: %v\n", err)
 		return
 	}
-	
+
 	fmt.Println("Configuration reset to defaults.")
 	showConfig()
 }
@@ -322,9 +336,9 @@ func filterTranscriptionModels(models []OpenAIModel) []OpenAIModel {
 		// Filter for audio/speech models suitable for transcription
 		// Include Whisper models and other audio-related models
 		if strings.Contains(model.ID, "whisper") ||
-		   strings.Contains(model.ID, "audio") ||
-		   strings.Contains(model.ID, "speech") ||
-		   strings.Contains(model.ID, "transcribe") {
+			strings.Contains(model.ID, "audio") ||
+			strings.Contains(model.ID, "speech") ||
+			strings.Contains(model.ID, "transcribe") {
 			transcriptionModels = append(transcriptionModels, model)
 		}
 	}
@@ -334,7 +348,7 @@ func filterTranscriptionModels(models []OpenAIModel) []OpenAIModel {
 		for _, model := range models {
 			// Add some general models that might work for audio processing
 			if strings.Contains(model.ID, "gpt-4") ||
-			   strings.Contains(model.ID, "gpt-3.5") {
+				strings.Contains(model.ID, "gpt-3.5") {
 				transcriptionModels = append(transcriptionModels, model)
 			}
 		}
@@ -365,12 +379,12 @@ func filterChatModels(models []OpenAIModel) []OpenAIModel {
 	for _, model := range models {
 		// Filter for chat completion models
 		// Include GPT models that are suitable for chat completions
-		if strings.Contains(model.ID, "gpt-") && 
-		   !strings.Contains(model.ID, "instruct")&&
-		   !strings.Contains(model.ID, "embedding")&&
-		   !strings.Contains(model.ID, "whisper")&&
-		   !strings.Contains(model.ID, "tts")&&
-		   !strings.Contains(model.ID, "dall-e") {
+		if strings.Contains(model.ID, "gpt-") &&
+			!strings.Contains(model.ID, "instruct") &&
+			!strings.Contains(model.ID, "embedding") &&
+			!strings.Contains(model.ID, "whisper") &&
+			!strings.Contains(model.ID, "tts") &&
+			!strings.Contains(model.ID, "dall-e") {
 			chatModels = append(chatModels, model)
 		}
 	}

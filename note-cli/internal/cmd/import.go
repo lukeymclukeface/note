@@ -15,9 +15,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
@@ -37,7 +39,7 @@ Supported audio formats: mp3, wav, m4a, ogg, flac
 Requires:
 - OpenAI API key configured (run 'note setup')
 - ffmpeg installed for format conversion`,
-Args: cobra.MaximumNArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	RunE: importFile,
 }
 
@@ -46,7 +48,7 @@ func init() {
 }
 
 func importFile(cmd *cobra.Command, args []string) error {
-var filePath string
+	var filePath string
 
 	if len(args) == 1 {
 		filePath = args[0]
@@ -54,7 +56,7 @@ var filePath string
 		// No argument provided, find compatible files in the current directory
 		var files []string
 		extensions := []string{"*.mp3", "*.wav", "*.m4a", "*.ogg", "*.flac"}
-		
+
 		for _, ext := range extensions {
 			matches, err := filepath.Glob(ext)
 			if err != nil {
@@ -62,24 +64,24 @@ var filePath string
 			}
 			files = append(files, matches...)
 		}
-		
+
 		if len(files) == 0 {
 			return fmt.Errorf("no compatible audio files found in the current directory")
 		}
-		
+
 		// Create options for selection
 		var options []huh.Option[string]
 		for _, file := range files {
 			options = append(options, huh.NewOption(file, file))
 		}
-		
+
 		selectField := huh.NewSelect[string]().
 			Title("Select a file to import:").
 			Options(options...).
 			Value(&filePath)
-		
+
 		form := huh.NewForm(huh.NewGroup(selectField))
-		
+
 		if err := form.Run(); err != nil {
 			return fmt.Errorf("file selection cancelled")
 		}
@@ -118,9 +120,12 @@ var filePath string
 		return fmt.Errorf("OpenAI API key not configured. Please run 'note setup' first")
 	}
 
-	// Check if ffmpeg is available
+	// Check if ffmpeg and ffprobe are available (needed for chunking)
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		return fmt.Errorf("ffmpeg not found. Please install with 'brew install ffmpeg' or run 'note setup'")
+	}
+	if _, err := exec.LookPath("ffprobe"); err != nil {
+		return fmt.Errorf("ffprobe not found. This is typically included with ffmpeg. Please install with 'brew install ffmpeg' or run 'note setup'")
 	}
 
 	// Create a unique folder under notes directory
@@ -170,8 +175,8 @@ var filePath string
 		return fmt.Errorf("failed to save recording: %w", err)
 	}
 
-	// Transcribe and summarize
-	transcript, err := transcribeFileWithSpinner(newFilePath, cfg.OpenAIKey)
+	// Transcribe using chunked approach for longer files
+	transcript, err := transcribeFileChunkedWithSpinner(newFilePath, cfg.OpenAIKey, destinationDir)
 	if err != nil {
 		return fmt.Errorf("failed to transcribe file: %w", err)
 	}
@@ -297,6 +302,13 @@ func transcribeFile(filePath, apiKey string) (string, error) {
 		return "", err
 	}
 
+	// Add prompt to encourage speaker identification
+	speakerPrompt := "The following audio contains multiple speakers. Please transcribe the entire audio and identify speakers as Speaker 1, Speaker 2, etc. when possible."
+	err = writer.WriteField("prompt", speakerPrompt)
+	if err != nil {
+		return "", err
+	}
+
 	writer.Close()
 
 	req, err := http.NewRequest("POST", url, &requestBody)
@@ -344,6 +356,13 @@ func summarizeText(text, apiKey string) (string, error) {
 		model = "gpt-3.5-turbo"
 	}
 
+	// Truncate text if it's too long for the API (rough estimate: 1 token ≈ 4 characters)
+	// GPT-3.5-turbo has a 4096 token limit, leaving room for system message and response
+	maxInputLength := 12000 // About 3000 tokens
+	if len(text) > maxInputLength {
+		text = text[:maxInputLength] + "\n\n[Content truncated due to length...]"
+	}
+
 	url := "https://api.openai.com/v1/chat/completions"
 	requestBody, err := json.Marshal(map[string]interface{}{
 		"model": model,
@@ -357,7 +376,7 @@ func summarizeText(text, apiKey string) (string, error) {
 				"content": fmt.Sprintf("Please provide a concise summary of the following transcribed audio:\n\n%s", text),
 			},
 		},
-		"max_tokens":  300,
+		"max_tokens":  500,
 		"temperature": 0.7,
 	})
 	if err != nil {
@@ -380,7 +399,9 @@ func summarizeText(text, apiKey string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected response status: %s", resp.Status)
+		// Read the error response body for more details
+		respBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("unexpected response status: %s - %s", resp.Status, string(respBody))
 	}
 
 	var result map[string]interface{}
@@ -450,18 +471,231 @@ func runTaskWithSpinner(message string, task func() (interface{}, error)) (inter
 	}
 }
 
-// Wrapper functions for transcription and summarization with spinner
-func transcribeFileWithSpinner(filePath, apiKey string) (string, error) {
-	task := func() (interface{}, error) {
+// ChunkedTranscriptionProgress represents the progress state for chunked transcription
+type ChunkedTranscriptionProgress struct {
+	CurrentChunk  int
+	TotalChunks   int
+	ChunkStart    float64
+	ChunkEnd      float64
+	FilePath      string
+	APIKey        string
+	Duration      int
+	ChunkDuration int
+	Transcript    string
+	Err           error
+	Done          bool
+	DestinationDir string // Directory to save individual chunk transcriptions
+}
+
+// Init implements tea.Model
+func (p ChunkedTranscriptionProgress) Init() tea.Cmd {
+	// Set up initial chunk info
+	start := (p.CurrentChunk - 1) * p.ChunkDuration
+	end := start + p.ChunkDuration
+	if end > p.Duration {
+		end = p.Duration
+	}
+	p.ChunkStart = float64(start) / 60.0
+	p.ChunkEnd = float64(end) / 60.0
+	
+	return p.transcribeNextChunk()
+}
+
+// Update implements tea.Model
+func (p ChunkedTranscriptionProgress) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case chunkCompleteMsg:
+		p.Transcript += msg.transcript + "\n\n"
+		p.CurrentChunk++
+		
+		if msg.err != nil {
+			p.Err = msg.err
+			p.Done = true
+			return p, tea.Quit
+		}
+		
+		if p.CurrentChunk > p.TotalChunks {
+			p.Done = true
+			p.Transcript = strings.TrimSpace(p.Transcript)
+			return p, tea.Quit
+		}
+		
+		// Update the chunk info for the next chunk
+		start := (p.CurrentChunk - 1) * p.ChunkDuration
+		end := start + p.ChunkDuration
+		if end > p.Duration {
+			end = p.Duration
+		}
+		p.ChunkStart = float64(start) / 60.0
+		p.ChunkEnd = float64(end) / 60.0
+		
+		return p, p.transcribeNextChunk()
+	case tea.KeyMsg:
+		if msg.String() == "ctrl+c" {
+			p.Err = fmt.Errorf("transcription cancelled")
+			p.Done = true
+			return p, tea.Quit
+		}
+	}
+	return p, nil
+}
+
+// View implements tea.Model
+func (p ChunkedTranscriptionProgress) View() string {
+	if p.Err != nil {
+		return fmt.Sprintf("❌ Transcription failed: %v\n", p.Err)
+	}
+	
+	if p.Done {
+		return "✅ Transcription completed!\n"
+	}
+	
+	if p.CurrentChunk == 0 {
+		return fmt.Sprintf("🔄 Audio file is %d minutes long, using chunked transcription...\n", p.Duration/60)
+	}
+	
+	progress := float64(p.CurrentChunk-1) / float64(p.TotalChunks)
+	progressBar := strings.Repeat("█", int(progress*20)) + strings.Repeat("░", 20-int(progress*20))
+	
+	return fmt.Sprintf("📝 Transcribing chunk %d/%d (%.1f-%.1f minutes)\n[%s] %.1f%%\n",
+		p.CurrentChunk, p.TotalChunks, p.ChunkStart, p.ChunkEnd, progressBar, progress*100)
+}
+
+type chunkCompleteMsg struct {
+	transcript string
+	err        error
+}
+
+func (p ChunkedTranscriptionProgress) transcribeNextChunk() tea.Cmd {
+	return func() tea.Msg {
+		if p.CurrentChunk > p.TotalChunks {
+			return chunkCompleteMsg{transcript: "", err: nil}
+		}
+		
+		start := (p.CurrentChunk - 1) * p.ChunkDuration
+		end := start + p.ChunkDuration
+		if end > p.Duration {
+			end = p.Duration
+		}
+		
+		chunkFilePath := fmt.Sprintf("%s_chunk_%d.wav", p.FilePath, start)
+		
+		// Split the audio file into chunks using ffmpeg
+		err := splitAudio(p.FilePath, chunkFilePath, start, p.ChunkDuration)
+		if err != nil {
+			return chunkCompleteMsg{transcript: "", err: fmt.Errorf("failed to split audio: %w", err)}
+		}
+		
+		chunkTranscript, err := transcribeFile(chunkFilePath, p.APIKey)
+		os.Remove(chunkFilePath) // Clean up the chunk file
+		
+		if err != nil {
+			return chunkCompleteMsg{transcript: "", err: fmt.Errorf("failed to transcribe chunk %d: %w", p.CurrentChunk, err)}
+		}
+		
+		// Save individual chunk transcription if destination directory is provided
+		if p.DestinationDir != "" {
+			chunkFileName := fmt.Sprintf("transcription_chunk_%02d.md", p.CurrentChunk)
+			chunkFilePath := filepath.Join(p.DestinationDir, chunkFileName)
+			
+			startMin := float64(start) / 60.0
+			endMin := float64(end) / 60.0
+			
+			chunkContent := fmt.Sprintf("# Transcription Chunk %d\n\n**Time Range:** %.1f - %.1f minutes\n\n%s\n",
+				p.CurrentChunk, startMin, endMin, chunkTranscript)
+			
+			if writeErr := os.WriteFile(chunkFilePath, []byte(chunkContent), 0644); writeErr != nil {
+				// Don't fail the entire process if we can't save the chunk, just log it
+				// The main transcription will still continue
+				fmt.Printf("Warning: Failed to save chunk %d transcription: %v\n", p.CurrentChunk, writeErr)
+			}
+		}
+		
+		return chunkCompleteMsg{transcript: chunkTranscript, err: nil}
+	}
+}
+
+func transcribeFileChunked(filePath, apiKey, destinationDir string) (string, error) {
+	// Define the chunk duration (e.g., 10 minutes)
+	chunkDuration := 10 * 60 // 10 minutes in seconds
+
+	// Get the duration of the file using ffprobe
+	duration, err := getAudioDuration(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to get audio duration: %w", err)
+	}
+
+	// If file is shorter than chunk duration, transcribe normally
+	if duration <= chunkDuration {
 		return transcribeFile(filePath, apiKey)
 	}
 
-	result, err := runTaskWithSpinner("🎙️  Transcribing audio using OpenAI", task)
+	totalChunks := (duration + chunkDuration - 1) / chunkDuration // ceiling division
+	
+	model := ChunkedTranscriptionProgress{
+		CurrentChunk:   1,
+		TotalChunks:    totalChunks,
+		FilePath:       filePath,
+		APIKey:         apiKey,
+		Duration:       duration,
+		ChunkDuration:  chunkDuration,
+		DestinationDir: destinationDir,
+	}
+	
+	program := tea.NewProgram(model)
+	finalModel, err := program.Run()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to run transcription progress: %w", err)
+	}
+	
+	final := finalModel.(ChunkedTranscriptionProgress)
+	if final.Err != nil {
+		return "", final.Err
+	}
+	
+	return final.Transcript, nil
+}
+
+func getAudioDuration(filePath string) (int, error) {
+	cmd := exec.Command("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", filePath)
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+	duration, err := strconv.ParseFloat(strings.TrimSpace(string(output)), 64)
+	if err != nil {
+		return 0, err
+	}
+	return int(duration), nil
+}
+
+func splitAudio(inputPath, outputPath string, start, duration int) error {
+	// Use same audio format and quality as the conversion function for consistency
+	cmd := exec.Command("ffmpeg",
+		"-i", inputPath,
+		"-ss", strconv.Itoa(start),
+		"-t", strconv.Itoa(duration),
+		"-acodec", "libmp3lame",
+		"-ab", "128k",
+		"-ar", "44100",
+		"-ac", "1",
+		"-y", // Overwrite output file if it exists
+		outputPath)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to split audio chunk at %ds: %s", start, stderr.String())
 	}
 
-	return result.(string), nil
+	return nil
+}
+
+// Wrapper functions for transcription and summarization with spinner
+func transcribeFileChunkedWithSpinner(filePath, apiKey, destinationDir string) (string, error) {
+	// Just call the function directly - it already has Bubble Tea progress built in
+	return transcribeFileChunked(filePath, apiKey, destinationDir)
 }
 
 func summarizeTextWithSpinner(text, apiKey string) (string, error) {
