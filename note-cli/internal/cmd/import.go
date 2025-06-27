@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
@@ -369,14 +369,22 @@ func summarizeText(text, apiKey string) (string, error) {
 		"messages": []map[string]interface{}{
 			{
 				"role":    "system",
-				"content": "You are a helpful assistant that creates concise summaries of transcribed audio content.",
+				"content": "You are a helpful assistant that creates summaries of transcribed audio content.",
 			},
 			{
-				"role":    "user",
-				"content": fmt.Sprintf("Please provide a concise summary of the following transcribed audio:\n\n%s", text),
+				"role": "user",
+				"content": fmt.Sprintf(`Please provide a summary of the following transcribed audio.
+
+				If the transcription is of a meeting or lecture, summarize the key topics covered and any important conclusions or action items.
+				If the transactiption is of an interview, summarize the main questions asked and the responses given.
+				If the transcription is of a conversation, please summarize the main points discussed and identify key speakers if possible.
+
+				Here is the transcription text:
+				%s
+				`, text),
 			},
 		},
-		"max_tokens":  500,
+		"max_tokens":  8000, // Allow for a longer summary
 		"temperature": 0.7,
 	})
 	if err != nil {
@@ -473,17 +481,17 @@ func runTaskWithSpinner(message string, task func() (interface{}, error)) (inter
 
 // ChunkedTranscriptionProgress represents the progress state for chunked transcription
 type ChunkedTranscriptionProgress struct {
-	CurrentChunk  int
-	TotalChunks   int
-	ChunkStart    float64
-	ChunkEnd      float64
-	FilePath      string
-	APIKey        string
-	Duration      int
-	ChunkDuration int
-	Transcript    string
-	Err           error
-	Done          bool
+	CurrentChunk   int
+	TotalChunks    int
+	ChunkStart     float64
+	ChunkEnd       float64
+	FilePath       string
+	APIKey         string
+	Duration       int
+	ChunkDuration  int
+	Transcript     string
+	Err            error
+	Done           bool
 	DestinationDir string // Directory to save individual chunk transcriptions
 }
 
@@ -497,7 +505,7 @@ func (p ChunkedTranscriptionProgress) Init() tea.Cmd {
 	}
 	p.ChunkStart = float64(start) / 60.0
 	p.ChunkEnd = float64(end) / 60.0
-	
+
 	return p.transcribeNextChunk()
 }
 
@@ -507,19 +515,19 @@ func (p ChunkedTranscriptionProgress) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case chunkCompleteMsg:
 		p.Transcript += msg.transcript + "\n\n"
 		p.CurrentChunk++
-		
+
 		if msg.err != nil {
 			p.Err = msg.err
 			p.Done = true
 			return p, tea.Quit
 		}
-		
+
 		if p.CurrentChunk > p.TotalChunks {
 			p.Done = true
 			p.Transcript = strings.TrimSpace(p.Transcript)
 			return p, tea.Quit
 		}
-		
+
 		// Update the chunk info for the next chunk
 		start := (p.CurrentChunk - 1) * p.ChunkDuration
 		end := start + p.ChunkDuration
@@ -528,7 +536,7 @@ func (p ChunkedTranscriptionProgress) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		p.ChunkStart = float64(start) / 60.0
 		p.ChunkEnd = float64(end) / 60.0
-		
+
 		return p, p.transcribeNextChunk()
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
@@ -545,18 +553,18 @@ func (p ChunkedTranscriptionProgress) View() string {
 	if p.Err != nil {
 		return fmt.Sprintf("❌ Transcription failed: %v\n", p.Err)
 	}
-	
+
 	if p.Done {
 		return "✅ Transcription completed!\n"
 	}
-	
+
 	if p.CurrentChunk == 0 {
 		return fmt.Sprintf("🔄 Audio file is %d minutes long, using chunked transcription...\n", p.Duration/60)
 	}
-	
+
 	progress := float64(p.CurrentChunk-1) / float64(p.TotalChunks)
 	progressBar := strings.Repeat("█", int(progress*20)) + strings.Repeat("░", 20-int(progress*20))
-	
+
 	return fmt.Sprintf("📝 Transcribing chunk %d/%d (%.1f-%.1f minutes)\n[%s] %.1f%%\n",
 		p.CurrentChunk, p.TotalChunks, p.ChunkStart, p.ChunkEnd, progressBar, progress*100)
 }
@@ -571,46 +579,46 @@ func (p ChunkedTranscriptionProgress) transcribeNextChunk() tea.Cmd {
 		if p.CurrentChunk > p.TotalChunks {
 			return chunkCompleteMsg{transcript: "", err: nil}
 		}
-		
+
 		start := (p.CurrentChunk - 1) * p.ChunkDuration
 		end := start + p.ChunkDuration
 		if end > p.Duration {
 			end = p.Duration
 		}
-		
+
 		chunkFilePath := fmt.Sprintf("%s_chunk_%d.wav", p.FilePath, start)
-		
+
 		// Split the audio file into chunks using ffmpeg
 		err := splitAudio(p.FilePath, chunkFilePath, start, p.ChunkDuration)
 		if err != nil {
 			return chunkCompleteMsg{transcript: "", err: fmt.Errorf("failed to split audio: %w", err)}
 		}
-		
+
 		chunkTranscript, err := transcribeFile(chunkFilePath, p.APIKey)
 		os.Remove(chunkFilePath) // Clean up the chunk file
-		
+
 		if err != nil {
 			return chunkCompleteMsg{transcript: "", err: fmt.Errorf("failed to transcribe chunk %d: %w", p.CurrentChunk, err)}
 		}
-		
+
 		// Save individual chunk transcription if destination directory is provided
 		if p.DestinationDir != "" {
 			chunkFileName := fmt.Sprintf("transcription_chunk_%02d.md", p.CurrentChunk)
 			chunkFilePath := filepath.Join(p.DestinationDir, chunkFileName)
-			
+
 			startMin := float64(start) / 60.0
 			endMin := float64(end) / 60.0
-			
+
 			chunkContent := fmt.Sprintf("# Transcription Chunk %d\n\n**Time Range:** %.1f - %.1f minutes\n\n%s\n",
 				p.CurrentChunk, startMin, endMin, chunkTranscript)
-			
+
 			if writeErr := os.WriteFile(chunkFilePath, []byte(chunkContent), 0644); writeErr != nil {
 				// Don't fail the entire process if we can't save the chunk, just log it
 				// The main transcription will still continue
 				fmt.Printf("Warning: Failed to save chunk %d transcription: %v\n", p.CurrentChunk, writeErr)
 			}
 		}
-		
+
 		return chunkCompleteMsg{transcript: chunkTranscript, err: nil}
 	}
 }
@@ -631,7 +639,7 @@ func transcribeFileChunked(filePath, apiKey, destinationDir string) (string, err
 	}
 
 	totalChunks := (duration + chunkDuration - 1) / chunkDuration // ceiling division
-	
+
 	model := ChunkedTranscriptionProgress{
 		CurrentChunk:   1,
 		TotalChunks:    totalChunks,
@@ -641,18 +649,18 @@ func transcribeFileChunked(filePath, apiKey, destinationDir string) (string, err
 		ChunkDuration:  chunkDuration,
 		DestinationDir: destinationDir,
 	}
-	
+
 	program := tea.NewProgram(model)
 	finalModel, err := program.Run()
 	if err != nil {
 		return "", fmt.Errorf("failed to run transcription progress: %w", err)
 	}
-	
+
 	final := finalModel.(ChunkedTranscriptionProgress)
 	if final.Err != nil {
 		return "", final.Err
 	}
-	
+
 	return final.Transcript, nil
 }
 
