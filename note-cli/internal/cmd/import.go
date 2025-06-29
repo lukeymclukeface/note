@@ -29,7 +29,7 @@ var importCmd = &cobra.Command{
 	Use:   "import [file]",
 	Short: "Import and process an audio or text file",
 	Long: `Import and process a file. For audio files, convert to MP3 if needed, add to recordings database, 
-transcribe using OpenAI's Whisper API, create a summary, and save as a note.
+transcribe, create a summary, and save as a note.
 For text files, read the content, create a summary, and save as a note.
 
 If no file is specified, you'll be presented with a list of compatible files 
@@ -101,7 +101,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 	} else if isValidAudioFile(filePath) {
 		return processAudioFile(filePath)
 	} else {
-	return fmt.Errorf("invalid file format. Supported formats: mp3, wav, m4a, ogg, flac, md, txt. Got: %s", filepath.Ext(filePath))
+		return fmt.Errorf("invalid file format. Supported formats: mp3, wav, m4a, ogg, flac, md, txt. Got: %s", filepath.Ext(filePath))
 	}
 }
 
@@ -424,7 +424,7 @@ func summarizeText(text, apiKey string) (string, error) {
 
 	// Truncate text if it's too long for the API (rough estimate: 1 token ≈ 4 characters)
 	// GPT-3.5-turbo has a 4096 token limit, leaving room for system message and response
-	maxInputLength := 12000 // About 3000 tokens
+	maxInputLength := 100000 // About 3000 tokens
 	if len(text) > maxInputLength {
 		text = text[:maxInputLength] + "\n\n[Content truncated due to length...]"
 	}
@@ -434,24 +434,33 @@ func summarizeText(text, apiKey string) (string, error) {
 		"model": model,
 		"messages": []map[string]interface{}{
 			{
-				"role":    "system",
-				"content": "You are a helpful assistant that creates summaries of transcribed audio content.",
+				"role": "system",
+				"content": `You are a helpful assistant that summarizes text. 
+Your task is to create concise and informative summaries of various types of content, including meeting notes, interviews, and conversations. 
+Please ensure your summaries are clear and structured. 
+All outputs should be in markdown format only with no wrapping of the response with any explanations of the output.`,
 			},
 			{
 				"role": "user",
-				"content": fmt.Sprintf(`Please provide a summary of the following transcribed audio.
+				"content": fmt.Sprintf(`Please provide a summary of the following text.
 
-				If the transcription is of a meeting or lecture, summarize the key topics covered and any important conclusions or action items.
-				If the transactiption is of an interview, summarize the main questions asked and the responses given.
-				If the transcription is of a conversation, please summarize the main points discussed and identify key speakers if possible.
+If the text is of a meeting, summarize the key topics covered and any important conclusions or action items. The output should include the following sections:
+# Title
+### Overview
+### Key topics
+### Outcome
+### Action items (with responsible parties and deadlines if mentioned)
 
-				Here is the transcription text:
-				%s
-				`, text),
+If the text is of an interview, summarize the main questions asked and the responses given.
+If the text is of a conversation, please summarize the main points discussed and identify key speakers if possible.
+
+Here is the text:
+				
+%s`, text),
 			},
 		},
-		"max_tokens":  8000, // Allow for a longer summary
-		"temperature": 0.7,
+		"max_completion_tokens": 100000, // Allow for a longer summary
+		// "temperature":           0.7,
 	})
 	if err != nil {
 		return "", err
@@ -836,8 +845,7 @@ func saveMarkdownFilesWithSpinner(transcript, summary, transcriptionPath, summar
 		}
 
 		// Write summary file
-		summaryContent := fmt.Sprintf("# Summary\n\n%s\n", summary)
-		if err := os.WriteFile(summaryPath, []byte(summaryContent), 0644); err != nil {
+		if err := os.WriteFile(summaryPath, []byte(summary), 0644); err != nil {
 			return nil, fmt.Errorf("failed to write summary file: %w", err)
 		}
 

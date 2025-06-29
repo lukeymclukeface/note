@@ -219,7 +219,8 @@ func configureModels() error {
 
 	// Filter models for different purposes
 	transcriptionModels := filterTranscriptionModels(models)
-	chatModels := filterChatModels(models)
+	// chatModels := filterChatModels(models)
+	chatModels := models
 
 	if len(transcriptionModels) == 0 {
 		return fmt.Errorf("no suitable transcription models found")
