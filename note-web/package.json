@@ -15,9 +15,13 @@
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.2.0",
     "clsx": "^2.1.1",
+    "highlight.js": "^11.11.1",
     "next": "15.3.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

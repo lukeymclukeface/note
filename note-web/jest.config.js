@@ -9,6 +9,11 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jsdom',
+  moduleNameMapper: {
+    '^react-markdown$': '<rootDir>/src/__tests__/mocks/react-markdown.js',
+    '^remark-gfm$': '<rootDir>/src/__tests__/mocks/remark-gfm.js',
+    '^rehype-highlight$': '<rootDir>/src/__tests__/mocks/rehype-highlight.js',
+  },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',

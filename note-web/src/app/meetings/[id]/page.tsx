@@ -1,6 +1,7 @@
 import { getMeetingById } from '@/lib/database';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
 interface MeetingPageProps {
   params: Promise<{
@@ -124,11 +125,7 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
                 📋 Meeting Summary
               </h2>
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-                <div className="prose max-w-none">
-                  <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {meeting.summary}
-                  </div>
-                </div>
+                <MarkdownRenderer content={meeting.summary} />
               </div>
             </section>
           )}
@@ -140,11 +137,7 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
                 📄 Full Content
               </h2>
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-                <div className="prose max-w-none">
-                  <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {meeting.content}
-                  </div>
-                </div>
+                <MarkdownRenderer content={meeting.content} />
               </div>
             </section>
           )}
