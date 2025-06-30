@@ -6,7 +6,8 @@ import { clsx } from 'clsx';
 import { ThemeSelector } from './ThemeSelector';
 
 const navigation = [
-  { name: 'Notes', href: '/', icon: '📝' },
+  { name: 'Dashboard', href: '/', icon: '🏠' },
+  { name: 'Notes', href: '/notes', icon: '📝' },
   { name: 'Meetings', href: '/meetings', icon: '🤝' },
   { name: 'Interviews', href: '/interviews', icon: '💼' },
   { name: 'Calendar', href: '/calendar', icon: '📅' },

@@ -268,3 +268,116 @@ export function getWeekEvents(weekStart: Date): CalendarEvent[] {
   
   return getCalendarEvents(weekStart, weekEnd);
 }
+
+// Get recent notes (last N items)
+export function getRecentNotes(limit: number = 5): Note[] {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, title, content, summary, tags, recording_id, created_at, updated_at 
+      FROM notes 
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+    const notes = stmt.all(limit) as Note[];
+    db.close();
+    return notes;
+  } catch (error) {
+    console.error('Error fetching recent notes:', error);
+    return [];
+  }
+}
+
+// Get recent meetings (last N items)
+export function getRecentMeetings(limit: number = 5): Meeting[] {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, title, content, summary, attendees, location, tags, 
+             recording_id, meeting_date, created_at, updated_at 
+      FROM meetings 
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+    const meetings = stmt.all(limit) as Meeting[];
+    db.close();
+    return meetings;
+  } catch (error) {
+    console.error('Error fetching recent meetings:', error);
+    return [];
+  }
+}
+
+// Get recent interviews (last N items)
+export function getRecentInterviews(limit: number = 5): Interview[] {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, title, content, summary, interviewee, interviewer, 
+             company, position, tags, recording_id, interview_date, 
+             created_at, updated_at 
+      FROM interviews 
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+    const interviews = stmt.all(limit) as Interview[];
+    db.close();
+    return interviews;
+  } catch (error) {
+    console.error('Error fetching recent interviews:', error);
+    return [];
+  }
+}
+
+// Get recent recordings (last N items)
+export function getRecentRecordings(limit: number = 5): Recording[] {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, filename, file_path, start_time, end_time, duration, 
+             file_size, format, sample_rate, channels, created_at 
+      FROM recordings 
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+    const recordings = stmt.all(limit) as Recording[];
+    db.close();
+    return recordings;
+  } catch (error) {
+    console.error('Error fetching recent recordings:', error);
+    return [];
+  }
+}
+
+// Get summary statistics
+export function getDashboardStats() {
+  try {
+    const db = getDatabase();
+    
+    const notesCount = db.prepare('SELECT COUNT(*) as count FROM notes').get() as { count: number };
+    const meetingsCount = db.prepare('SELECT COUNT(*) as count FROM meetings').get() as { count: number };
+    const interviewsCount = db.prepare('SELECT COUNT(*) as count FROM interviews').get() as { count: number };
+    const recordingsCount = db.prepare('SELECT COUNT(*) as count FROM recordings').get() as { count: number };
+    
+    const totalDuration = db.prepare('SELECT SUM(duration) as total FROM recordings').get() as { total: number | null };
+    
+    db.close();
+    
+    return {
+      notes: notesCount.count,
+      meetings: meetingsCount.count,
+      interviews: interviewsCount.count,
+      recordings: recordingsCount.count,
+      totalDurationMinutes: totalDuration.total ? Math.round(totalDuration.total / (1000 * 1000 * 1000 * 60)) : 0,
+    };
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return {
+      notes: 0,
+      meetings: 0,
+      interviews: 0,
+      recordings: 0,
+      totalDurationMinutes: 0,
+    };
+  }
+}

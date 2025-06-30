@@ -34,9 +34,13 @@ describe('Navigation', () => {
     render(<NavigationWrapper />)
     
     // Check main navigation links (should appear in both desktop and mobile)
+    const dashboardLinks = screen.getAllByRole('link', { name: /Dashboard/ })
+    expect(dashboardLinks).toHaveLength(2) // desktop and mobile
+    expect(dashboardLinks[0]).toHaveAttribute('href', '/')
+    
     const notesLinks = screen.getAllByRole('link', { name: /Notes/ })
     expect(notesLinks).toHaveLength(2) // desktop and mobile
-    expect(notesLinks[0]).toHaveAttribute('href', '/')
+    expect(notesLinks[0]).toHaveAttribute('href', '/notes')
     
     const meetingsLinks = screen.getAllByRole('link', { name: /Meetings/ })
     expect(meetingsLinks).toHaveLength(2)
@@ -64,6 +68,7 @@ describe('Navigation', () => {
     render(<NavigationWrapper />)
     
     // Check for emoji icons (should appear in both desktop and mobile)
+    expect(screen.getAllByText('🏠')).toHaveLength(2) // Dashboard
     expect(screen.getAllByText('📝')).toHaveLength(2) // Notes
     expect(screen.getAllByText('🤝')).toHaveLength(2) // Meetings
     expect(screen.getAllByText('💼')).toHaveLength(2) // Interviews
@@ -73,12 +78,12 @@ describe('Navigation', () => {
   })
 
   it('highlights active navigation item', () => {
-    // Since we're mocking pathname to '/', Notes should be active
+    // Since we're mocking pathname to '/', Dashboard should be active
     render(<NavigationWrapper />)
     
-    const notesLinks = screen.getAllByRole('link', { name: /Notes/ })
+    const dashboardLinks = screen.getAllByRole('link', { name: /Dashboard/ })
     // First one is desktop, should have active classes
-    expect(notesLinks[0]).toHaveClass('border-blue-500')
+    expect(dashboardLinks[0]).toHaveClass('border-blue-500')
   })
 
   it('applies inactive styles to non-current links', () => {
