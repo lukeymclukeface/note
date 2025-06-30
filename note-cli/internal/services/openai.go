@@ -313,7 +313,7 @@ type ContentAnalysis struct {
 // AnalyzeContentAndGenerateTitle analyzes content to determine its type and generates an appropriate title
 func (s *OpenAIService) AnalyzeContentAndGenerateTitle(content string) (*ContentAnalysis, error) {
 	// Truncate content if it's too long for analysis
-	maxInputLength := 400000 // About 12k tokens for analysis
+	maxInputLength := 50000 // About 12k tokens for analysis
 	analysisContent := content
 	if len(content) > maxInputLength {
 		analysisContent = content[:maxInputLength] + "\n\n[Content truncated for analysis...]"
