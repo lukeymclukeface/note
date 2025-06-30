@@ -26,12 +26,12 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200">
       <div className="flex items-start justify-between mb-3">
         <h3 className="text-lg font-semibold line-clamp-2">
           <Link 
             href={`/meetings/${meeting.id}`}
-            className="text-gray-900 hover:text-blue-600 transition-colors duration-200"
+            className="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200"
           >
             {meeting.title}
           </Link>

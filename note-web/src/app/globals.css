@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
-/* Force light theme */
+/* Theme variables */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+:root.dark {
+  --background: #0f0f0f;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -14,15 +19,16 @@
 }
 
 body {
-  background: #ffffff;
-  color: #171717;
+  background: var(--background);
+  color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Ensure all content has light background */
 html {
-  background: #ffffff;
+  background: var(--background);
+  transition: background-color 0.3s ease;
 }
 
 /* Line clamp utility for text truncation */
