@@ -38,11 +38,11 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
         </h3>
         <div className="flex items-center space-x-2 ml-4">
           {meeting.recording_id && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
               🎵 Recording
             </span>
           )}
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
             📅 Meeting
           </span>
         </div>
@@ -50,36 +50,36 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
 
       {meeting.meeting_date && (
         <div className="mb-3">
-          <span className="text-sm font-medium text-gray-600">Meeting Date: </span>
-          <span className="text-sm text-gray-800">{formatMeetingDate(meeting.meeting_date)}</span>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Meeting Date: </span>
+          <span className="text-sm text-gray-800 dark:text-gray-200">{formatMeetingDate(meeting.meeting_date)}</span>
         </div>
       )}
 
       {meeting.attendees && (
         <div className="mb-3">
-          <span className="text-sm font-medium text-gray-600">Attendees: </span>
-          <span className="text-sm text-gray-800">{meeting.attendees}</span>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Attendees: </span>
+          <span className="text-sm text-gray-800 dark:text-gray-200">{meeting.attendees}</span>
         </div>
       )}
 
       {meeting.location && (
         <div className="mb-3">
-          <span className="text-sm font-medium text-gray-600">Location: </span>
-          <span className="text-sm text-gray-800">{meeting.location}</span>
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Location: </span>
+          <span className="text-sm text-gray-800 dark:text-gray-200">{meeting.location}</span>
         </div>
       )}
 
       {meeting.summary && (
         <div className="mb-4">
-          <h4 className="text-sm font-medium text-gray-600 mb-1">Summary:</h4>
-          <p className="text-sm text-gray-700 line-clamp-3">{meeting.summary}</p>
+          <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Summary:</h4>
+          <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">{meeting.summary}</p>
         </div>
       )}
 
       {meeting.content && (
         <div className="mb-4">
-          <h4 className="text-sm font-medium text-gray-600 mb-1">Content:</h4>
-          <p className="text-sm text-gray-700 line-clamp-3">{meeting.content}</p>
+          <h4 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Content:</h4>
+          <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">{meeting.content}</p>
         </div>
       )}
 
@@ -89,7 +89,7 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
             {meeting.tags.split(',').map((tag, index) => (
               <span
                 key={index}
-                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
               >
                 {tag.trim()}
               </span>
@@ -98,7 +98,7 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
         </div>
       )}
 
-      <div className="flex justify-between items-center text-xs text-gray-500 border-t border-gray-100 pt-3">
+      <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-3">
         <span>Created: {formatDate(meeting.created_at)}</span>
         <span>ID: {meeting.id}</span>
       </div>
