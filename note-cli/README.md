@@ -1,6 +1,6 @@
 # Note CLI
 
-[![Test CLI](https://github.com/lukeymclukeface/note/actions/workflows/test-cli.yml/badge.svg)](https://github.com/lukeymclukeface/note/actions/workflows/test-cli.yml)
+[![Test CLI](https://github.com/lukeymclukeface/note/actions/workflows/test-cli.yml/badge.svg?branch=master)](https://github.com/lukeymclukeface/note/actions/workflows/test-cli.yml)
 
 A powerful command-line interface for AI-powered note-taking, audio recording, and content management.
 
