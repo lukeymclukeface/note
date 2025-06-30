@@ -10,17 +10,51 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Note represents a note in the database
+// Note represents a general note in the database
 type Note struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	Tags      string `json:"tags"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID          int     `json:"id"`
+	Title       string  `json:"title"`
+	Content     string  `json:"content"`
+	Summary     string  `json:"summary"`
+	Tags        string  `json:"tags"`
+	RecordingID *int    `json:"recording_id"`  // Optional reference to recording
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
-// Recording represents an audio recording in the database
+// Meeting represents a meeting in the database
+type Meeting struct {
+	ID          int     `json:"id"`
+	Title       string  `json:"title"`
+	Content     string  `json:"content"`
+	Summary     string  `json:"summary"`
+	Attendees   string  `json:"attendees"`
+	Location    string  `json:"location"`
+	Tags        string  `json:"tags"`
+	RecordingID *int    `json:"recording_id"`  // Optional reference to recording
+	MeetingDate *string `json:"meeting_date"`  // When the meeting actually occurred
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+// Interview represents an interview in the database
+type Interview struct {
+	ID             int     `json:"id"`
+	Title          string  `json:"title"`
+	Content        string  `json:"content"`
+	Summary        string  `json:"summary"`
+	Interviewee    string  `json:"interviewee"`
+	Interviewer    string  `json:"interviewer"`
+	Company        string  `json:"company"`
+	Position       string  `json:"position"`
+	Tags           string  `json:"tags"`
+	RecordingID    *int    `json:"recording_id"`  // Optional reference to recording
+	InterviewDate  *string `json:"interview_date"`  // When the interview actually occurred
+	CreatedAt      string  `json:"created_at"`
+	UpdatedAt      string  `json:"updated_at"`
+}
+
+// Recording represents an audio recording file in the database
 type Recording struct {
 	ID         int           `json:"id"`
 	Filename   string        `json:"filename"`
@@ -50,22 +84,7 @@ func Initialize(dbPath string) error {
 	}
 	defer db.Close()
 
-	// Create notes table
-	createNotesTableSQL := `
-	CREATE TABLE IF NOT EXISTS notes (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		title TEXT NOT NULL,
-		content TEXT NOT NULL,
-		tags TEXT DEFAULT '',
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);`
-
-	if _, err := db.Exec(createNotesTableSQL); err != nil {
-		return fmt.Errorf("failed to create notes table: %w", err)
-	}
-
-	// Create recordings table
+	// Create recordings table first (referenced by other tables)
 	createRecordingsTableSQL := `
 	CREATE TABLE IF NOT EXISTS recordings (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,6 +102,68 @@ func Initialize(dbPath string) error {
 
 	if _, err := db.Exec(createRecordingsTableSQL); err != nil {
 		return fmt.Errorf("failed to create recordings table: %w", err)
+	}
+
+	// Create notes table
+	createNotesTableSQL := `
+	CREATE TABLE IF NOT EXISTS notes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		content TEXT NOT NULL,
+		summary TEXT DEFAULT '',
+		tags TEXT DEFAULT '',
+		recording_id INTEGER,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE SET NULL
+	);`
+
+	if _, err := db.Exec(createNotesTableSQL); err != nil {
+		return fmt.Errorf("failed to create notes table: %w", err)
+	}
+
+	// Create meetings table
+	createMeetingsTableSQL := `
+	CREATE TABLE IF NOT EXISTS meetings (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		content TEXT NOT NULL,
+		summary TEXT DEFAULT '',
+		attendees TEXT DEFAULT '',
+		location TEXT DEFAULT '',
+		tags TEXT DEFAULT '',
+		recording_id INTEGER,
+		meeting_date TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE SET NULL
+	);`
+
+	if _, err := db.Exec(createMeetingsTableSQL); err != nil {
+		return fmt.Errorf("failed to create meetings table: %w", err)
+	}
+
+	// Create interviews table
+	createInterviewsTableSQL := `
+	CREATE TABLE IF NOT EXISTS interviews (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		content TEXT NOT NULL,
+		summary TEXT DEFAULT '',
+		interviewee TEXT DEFAULT '',
+		interviewer TEXT DEFAULT '',
+		company TEXT DEFAULT '',
+		position TEXT DEFAULT '',
+		tags TEXT DEFAULT '',
+		recording_id INTEGER,
+		interview_date TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE SET NULL
+	);`
+
+	if _, err := db.Exec(createInterviewsTableSQL); err != nil {
+		return fmt.Errorf("failed to create interviews table: %w", err)
 	}
 
 	return nil
@@ -105,15 +186,15 @@ func Connect(dbPath string) (*sql.DB, error) {
 }
 
 // CreateNote creates a new note in the database
-func CreateNote(db *sql.DB, title, content, tags string) (*Note, error) {
+func CreateNote(db *sql.DB, title, content, summary, tags string, recordingID *int) (*Note, error) {
 	query := `
-		INSERT INTO notes (title, content, tags) 
-		VALUES (?, ?, ?) 
-		RETURNING id, title, content, tags, created_at, updated_at`
+		INSERT INTO notes (title, content, summary, tags, recording_id) 
+		VALUES (?, ?, ?, ?, ?) 
+		RETURNING id, title, content, summary, tags, recording_id, created_at, updated_at`
 	
 	var note Note
-	err := db.QueryRow(query, title, content, tags).Scan(
-		&note.ID, &note.Title, &note.Content, &note.Tags, 
+	err := db.QueryRow(query, title, content, summary, tags, recordingID).Scan(
+		&note.ID, &note.Title, &note.Content, &note.Summary, &note.Tags, &note.RecordingID,
 		&note.CreatedAt, &note.UpdatedAt,
 	)
 	
@@ -122,6 +203,47 @@ func CreateNote(db *sql.DB, title, content, tags string) (*Note, error) {
 	}
 	
 	return &note, nil
+}
+
+// CreateMeeting creates a new meeting in the database
+func CreateMeeting(db *sql.DB, title, content, summary, attendees, location, tags string, recordingID *int, meetingDate *string) (*Meeting, error) {
+	query := `
+		INSERT INTO meetings (title, content, summary, attendees, location, tags, recording_id, meeting_date) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
+		RETURNING id, title, content, summary, attendees, location, tags, recording_id, meeting_date, created_at, updated_at`
+	
+	var meeting Meeting
+	err := db.QueryRow(query, title, content, summary, attendees, location, tags, recordingID, meetingDate).Scan(
+		&meeting.ID, &meeting.Title, &meeting.Content, &meeting.Summary, &meeting.Attendees, &meeting.Location,
+		&meeting.Tags, &meeting.RecordingID, &meeting.MeetingDate, &meeting.CreatedAt, &meeting.UpdatedAt,
+	)
+	
+	if err != nil {
+		return nil, fmt.Errorf("failed to create meeting: %w", err)
+	}
+	
+	return &meeting, nil
+}
+
+// CreateInterview creates a new interview in the database
+func CreateInterview(db *sql.DB, title, content, summary, interviewee, interviewer, company, position, tags string, recordingID *int, interviewDate *string) (*Interview, error) {
+	query := `
+		INSERT INTO interviews (title, content, summary, interviewee, interviewer, company, position, tags, recording_id, interview_date) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+		RETURNING id, title, content, summary, interviewee, interviewer, company, position, tags, recording_id, interview_date, created_at, updated_at`
+	
+	var interview Interview
+	err := db.QueryRow(query, title, content, summary, interviewee, interviewer, company, position, tags, recordingID, interviewDate).Scan(
+		&interview.ID, &interview.Title, &interview.Content, &interview.Summary, &interview.Interviewee, &interview.Interviewer,
+		&interview.Company, &interview.Position, &interview.Tags, &interview.RecordingID, &interview.InterviewDate,
+		&interview.CreatedAt, &interview.UpdatedAt,
+	)
+	
+	if err != nil {
+		return nil, fmt.Errorf("failed to create interview: %w", err)
+	}
+	
+	return &interview, nil
 }
 
 // ListNotes retrieves notes from the database with optional tag filtering

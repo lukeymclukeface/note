@@ -32,9 +32,20 @@ export default function NoteCard({ note }: NoteCardProps) {
         <h2 className="text-xl font-semibold text-gray-900 line-clamp-2">
           {note.title}
         </h2>
-        <span className="text-sm text-gray-500 whitespace-nowrap ml-4">
-          {formatDate(note.created_at)}
-        </span>
+        <div className="flex items-center space-x-2 ml-4">
+          {note.recording_id && (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              🎵 Recording
+            </span>
+          )}
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            📝 Note
+          </span>
+        </div>
+      </div>
+      
+      <div className="text-sm text-gray-500 mb-3">
+        {formatDate(note.created_at)}
       </div>
       
       {tags.length > 0 && (
@@ -50,8 +61,18 @@ export default function NoteCard({ note }: NoteCardProps) {
         </div>
       )}
       
+      {note.summary && (
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-gray-600 mb-1">Summary:</h4>
+          <div className="text-gray-700 text-sm">
+            {truncateContent(note.summary)}
+          </div>
+        </div>
+      )}
+      
       <div className="text-gray-700 prose prose-sm max-w-none">
-        <div className="whitespace-pre-wrap">
+        <h4 className="text-sm font-medium text-gray-600 mb-1">Content:</h4>
+        <div className="whitespace-pre-wrap text-sm">
           {truncateContent(note.content)}
         </div>
       </div>

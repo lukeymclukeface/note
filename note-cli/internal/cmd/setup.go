@@ -233,6 +233,67 @@ func setupDatabase(dbPath string) error {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 
-	fmt.Println("✅ Database initialized successfully!")
+	// Create directory structure
+	if err := createDirectoryStructure(); err != nil {
+		return fmt.Errorf("failed to create directory structure: %w", err)
+	}
+
+	fmt.Println("✅ Database and directory structure initialized successfully!")
+	return nil
+}
+
+func createDirectoryStructure() error {
+	fmt.Println("📁 Creating directory structure...")
+
+	// Create base directory
+	baseDir, err := constants.GetBaseDir()
+	if err != nil {
+		return fmt.Errorf("failed to get base directory: %w", err)
+	}
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		return fmt.Errorf("failed to create base directory: %w", err)
+	}
+
+	// Create notes directory
+	notesDir, err := constants.GetNotesDir()
+	if err != nil {
+		return fmt.Errorf("failed to get notes directory: %w", err)
+	}
+	if err := os.MkdirAll(notesDir, 0755); err != nil {
+		return fmt.Errorf("failed to create notes directory: %w", err)
+	}
+
+	// Create meetings directory
+	meetingsDir, err := constants.GetMeetingsDir()
+	if err != nil {
+		return fmt.Errorf("failed to get meetings directory: %w", err)
+	}
+	if err := os.MkdirAll(meetingsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create meetings directory: %w", err)
+	}
+
+	// Create interviews directory
+	interviewsDir, err := constants.GetInterviewsDir()
+	if err != nil {
+		return fmt.Errorf("failed to get interviews directory: %w", err)
+	}
+	if err := os.MkdirAll(interviewsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create interviews directory: %w", err)
+	}
+
+	// Create recordings directory
+	recordingsDir, err := constants.GetRecordingsDir()
+	if err != nil {
+		return fmt.Errorf("failed to get recordings directory: %w", err)
+	}
+	if err := os.MkdirAll(recordingsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create recordings directory: %w", err)
+	}
+
+	fmt.Printf("   ✅ Created: %s\n", notesDir)
+	fmt.Printf("   ✅ Created: %s\n", meetingsDir)
+	fmt.Printf("   ✅ Created: %s\n", interviewsDir)
+	fmt.Printf("   ✅ Created: %s\n", recordingsDir)
+
 	return nil
 }

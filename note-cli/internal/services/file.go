@@ -34,13 +34,33 @@ func (s *FileService) CopyFile(src, dst string) error {
 
 // CreateNoteDirectory creates a directory for a note with a timestamp
 func (s *FileService) CreateNoteDirectory(baseName string) (string, error) {
-	notesDir, err := constants.GetNotesDir()
+	return s.CreateContentDirectory(baseName, "note")
+}
+
+// CreateContentDirectory creates a directory based on content type with a timestamp
+func (s *FileService) CreateContentDirectory(baseName, contentType string) (string, error) {
+	var baseDir string
+	var err error
+
+	// Determine the appropriate directory based on content type
+	switch strings.ToLower(contentType) {
+	case "meeting":
+		baseDir, err = constants.GetMeetingsDir()
+	case "interview":
+		baseDir, err = constants.GetInterviewsDir()
+	case "note", "other", "":
+		baseDir, err = constants.GetNotesDir()
+	default:
+		// Default to notes directory for unknown content types
+		baseDir, err = constants.GetNotesDir()
+	}
+
 	if err != nil {
-		return "", fmt.Errorf("failed to get notes directory: %w", err)
+		return "", fmt.Errorf("failed to get %s directory: %w", contentType, err)
 	}
 
 	folderName := fmt.Sprintf("%s_%s", baseName, time.Now().Format("20060102_150405"))
-	destinationDir := filepath.Join(notesDir, folderName)
+	destinationDir := filepath.Join(baseDir, folderName)
 
 	if err := os.MkdirAll(destinationDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create destination directory: %w", err)

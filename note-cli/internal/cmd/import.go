@@ -167,10 +167,10 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 		return fmt.Errorf("failed to summarize text: %w", err)
 	}
 
-	// Create notes directory using the generated title
+	// Create content directory using the generated title and detected content type
 	safeTitle := strings.ReplaceAll(contentAnalysis.Title, "/", "-")
 	safeTitle = strings.ReplaceAll(safeTitle, ":", "-")
-	destinationDir, err := fileService.CreateNoteDirectory(safeTitle)
+	destinationDir, err := fileService.CreateContentDirectory(safeTitle, contentAnalysis.ContentType)
 	if err != nil {
 		return err
 	}
@@ -326,10 +326,10 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 		return fmt.Errorf("failed to save markdown files: %w", err)
 	}
 
-	// Update destination directory to use the generated title
+	// Update destination directory to use the generated title and content type
 	safeTitle := strings.ReplaceAll(contentAnalysis.Title, "/", "-")
 	safeTitle = strings.ReplaceAll(safeTitle, ":", "-")
-	newDestinationDir, err := fileService.CreateNoteDirectory(safeTitle)
+	newDestinationDir, err := fileService.CreateContentDirectory(safeTitle, contentAnalysis.ContentType)
 	if err != nil {
 		return err
 	}

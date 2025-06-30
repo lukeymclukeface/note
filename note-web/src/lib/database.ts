@@ -6,7 +6,39 @@ export interface Note {
   id: number;
   title: string;
   content: string;
+  summary: string;
   tags: string;
+  recording_id?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Meeting {
+  id: number;
+  title: string;
+  content: string;
+  summary: string;
+  attendees: string;
+  location: string;
+  tags: string;
+  recording_id?: number;
+  meeting_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Interview {
+  id: number;
+  title: string;
+  content: string;
+  summary: string;
+  interviewee: string;
+  interviewer: string;
+  company: string;
+  position: string;
+  tags: string;
+  recording_id?: number;
+  interview_date?: string;
   created_at: string;
   updated_at: string;
 }
@@ -55,7 +87,7 @@ export function getAllNotes(): Note[] {
   try {
     const db = getDatabase();
     const stmt = db.prepare(`
-      SELECT id, title, content, tags, created_at, updated_at 
+      SELECT id, title, content, summary, tags, recording_id, created_at, updated_at 
       FROM notes 
       ORDER BY created_at DESC
     `);
@@ -68,12 +100,51 @@ export function getAllNotes(): Note[] {
   }
 }
 
+// Get all meetings from the database
+export function getAllMeetings(): Meeting[] {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, title, content, summary, attendees, location, tags, 
+             recording_id, meeting_date, created_at, updated_at 
+      FROM meetings 
+      ORDER BY created_at DESC
+    `);
+    const meetings = stmt.all() as Meeting[];
+    db.close();
+    return meetings;
+  } catch (error) {
+    console.error('Error fetching meetings:', error);
+    return [];
+  }
+}
+
+// Get all interviews from the database
+export function getAllInterviews(): Interview[] {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, title, content, summary, interviewee, interviewer, 
+             company, position, tags, recording_id, interview_date, 
+             created_at, updated_at 
+      FROM interviews 
+      ORDER BY created_at DESC
+    `);
+    const interviews = stmt.all() as Interview[];
+    db.close();
+    return interviews;
+  } catch (error) {
+    console.error('Error fetching interviews:', error);
+    return [];
+  }
+}
+
 // Get notes by tag
 export function getNotesByTag(tag: string): Note[] {
   try {
     const db = getDatabase();
     const stmt = db.prepare(`
-      SELECT id, title, content, tags, created_at, updated_at 
+      SELECT id, title, content, summary, tags, recording_id, created_at, updated_at 
       FROM notes 
       WHERE tags LIKE ? 
       ORDER BY created_at DESC
@@ -92,7 +163,7 @@ export function getNoteById(id: number): Note | null {
   try {
     const db = getDatabase();
     const stmt = db.prepare(`
-      SELECT id, title, content, tags, created_at, updated_at 
+      SELECT id, title, content, summary, tags, recording_id, created_at, updated_at 
       FROM notes 
       WHERE id = ?
     `);

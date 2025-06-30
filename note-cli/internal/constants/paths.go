@@ -26,6 +26,24 @@ func GetNotesDir() (string, error) {
 	return filepath.Join(baseDir, "notes"), nil
 }
 
+// GetMeetingsDir returns the meetings directory path
+func GetMeetingsDir() (string, error) {
+	baseDir, err := GetBaseDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(baseDir, "meetings"), nil
+}
+
+// GetInterviewsDir returns the interviews directory path
+func GetInterviewsDir() (string, error) {
+	baseDir, err := GetBaseDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(baseDir, "interviews"), nil
+}
+
 // GetRecordingsDir returns the recordings directory path
 func GetRecordingsDir() (string, error) {
 	baseDir, err := GetBaseDir()

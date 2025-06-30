@@ -37,12 +37,12 @@ func NewOpenAIService(verboseLogger *VerboseLogger) (*OpenAIService, error) {
 
 	transcriptionModel := cfg.TranscriptionModel
 	if transcriptionModel == "" {
-		transcriptionModel = "whisper-1"
+		transcriptionModel = "gpt-4o-transcribe"
 	}
 
 	summaryModel := cfg.SummaryModel
 	if summaryModel == "" {
-		summaryModel = "gpt-3.5-turbo"
+		summaryModel = "o3-mini"
 	}
 
 	if verboseLogger != nil {

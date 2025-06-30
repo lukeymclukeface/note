@@ -6,6 +6,8 @@ import { clsx } from 'clsx';
 
 const navigation = [
   { name: 'Notes', href: '/', icon: '📝' },
+  { name: 'Meetings', href: '/meetings', icon: '🤝' },
+  { name: 'Interviews', href: '/interviews', icon: '💼' },
   { name: 'Calendar', href: '/calendar', icon: '📅' },
   { name: 'Recordings', href: '/recordings', icon: '🎤' },
 ];
