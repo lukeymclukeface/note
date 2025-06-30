@@ -1,4 +1,4 @@
-import { getAllMeetings, Meeting } from '@/lib/database';
+import { getAllMeetings } from '@/lib/database';
 import MeetingCard from '@/components/MeetingCard';
 
 export default function MeetingsPage() {

@@ -1,4 +1,5 @@
 import { Meeting } from '@/lib/database';
+import Link from 'next/link';
 
 interface MeetingCardProps {
   meeting: Meeting;
@@ -27,8 +28,13 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
       <div className="flex items-start justify-between mb-3">
-        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-          {meeting.title}
+        <h3 className="text-lg font-semibold line-clamp-2">
+          <Link 
+            href={`/meetings/${meeting.id}`}
+            className="text-gray-900 hover:text-blue-600 transition-colors duration-200"
+          >
+            {meeting.title}
+          </Link>
         </h3>
         <div className="flex items-center space-x-2 ml-4">
           {meeting.recording_id && (

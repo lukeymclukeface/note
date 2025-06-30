@@ -1,4 +1,4 @@
-import { getAllInterviews, Interview } from '@/lib/database';
+import { getAllInterviews } from '@/lib/database';
 import InterviewCard from '@/components/InterviewCard';
 
 export default function InterviewsPage() {

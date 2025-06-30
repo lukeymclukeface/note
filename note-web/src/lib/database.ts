@@ -176,6 +176,25 @@ export function getNoteById(id: number): Note | null {
   }
 }
 
+// Get a single meeting by ID
+export function getMeetingById(id: number): Meeting | null {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, title, content, summary, attendees, location, tags, 
+             recording_id, meeting_date, created_at, updated_at 
+      FROM meetings 
+      WHERE id = ?
+    `);
+    const meeting = stmt.get(id) as Meeting | undefined;
+    db.close();
+    return meeting || null;
+  } catch (error) {
+    console.error('Error fetching meeting by ID:', error);
+    return null;
+  }
+}
+
 // Get all recordings from the database
 export function getAllRecordings(): Recording[] {
   try {
