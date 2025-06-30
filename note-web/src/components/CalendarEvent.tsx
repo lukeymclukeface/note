@@ -14,19 +14,19 @@ export default function CalendarEventComponent({ event, style }: CalendarEventPr
     switch (type) {
       case 'recording':
         return {
-          bg: 'bg-blue-500',
+          bg: 'bg-blue-500 dark:bg-blue-600',
           border: 'border-blue-600',
           text: 'text-white'
         };
       case 'note':
         return {
-          bg: 'bg-green-500',
+          bg: 'bg-green-500 dark:bg-green-600',
           border: 'border-green-600',
           text: 'text-white'
         };
       default:
         return {
-          bg: 'bg-gray-500',
+          bg: 'bg-gray-500 dark:bg-gray-600',
           border: 'border-gray-600',
           text: 'text-white'
         };
