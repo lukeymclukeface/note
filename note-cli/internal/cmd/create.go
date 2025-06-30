@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -22,11 +21,11 @@ If no content is provided, you'll be prompted to enter it.`,
 			content += arg
 		}
 		
-		fmt.Printf("Creating note: %s\n", content)
-		fmt.Printf("Created at: %s\n", time.Now().Format(time.RFC3339))
+		cmd.Printf("Creating note: %s\n", content)
+		cmd.Printf("Created at: %s\n", time.Now().Format(time.RFC3339))
 		
 		// TODO: Implement actual note storage logic
-		fmt.Println("Note created successfully!")
+		cmd.Println("Note created successfully!")
 	},
 }
 
