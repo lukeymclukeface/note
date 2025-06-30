@@ -5,6 +5,8 @@ import (
 	"note-cli/internal/config"
 	"note-cli/internal/constants"
 	"note-cli/internal/database"
+	"note-cli/internal/helpers"
+	"note-cli/internal/services"
 	"os"
 	"strconv"
 	"time"
@@ -50,10 +52,10 @@ func init() {
 }
 
 func listRecordings() error {
-	// Load config to get database path
-	cfg, err := config.Load()
+	// Load config and database
+	cfg, err := helpers.LoadConfigWithValidation()
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+		return err
 	}
 
 	if cfg.DatabasePath == "" {
@@ -84,8 +86,9 @@ func listRecordings() error {
 		// Format duration
 		duration := recording.Duration.Round(time.Second)
 
-		// Format file size
-		sizeStr := formatFileSize(recording.FileSize)
+		// Format file size using UI service
+		uiService := services.NewUIService()
+		sizeStr := uiService.FormatFileSize(recording.FileSize)
 
 		// Format created date
 		createdStr := recording.CreatedAt.Format("2006-01-02 15:04:05")
@@ -207,15 +210,3 @@ func deleteRecording(args []string) error {
 	return nil
 }
 
-func formatFileSize(bytes int64) string {
-	const unit = 1024
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
-	div, exp := int64(unit), 0
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
-}

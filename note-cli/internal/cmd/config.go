@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"note-cli/internal/config"
+	"note-cli/internal/helpers"
+	"note-cli/internal/services"
 	"os"
 	"sort"
 	"strings"
@@ -185,34 +185,27 @@ func resetConfig() {
 	showConfig()
 }
 
-// OpenAI API structures
-type OpenAIModel struct {
-	ID      string `json:"id"`
-	Object  string `json:"object"`
-	Created int64  `json:"created"`
-	OwnedBy string `json:"owned_by"`
-}
-
-type OpenAIModelsResponse struct {
-	Object string        `json:"object"`
-	Data   []OpenAIModel `json:"data"`
-}
 
 func configureModels() error {
 	// Load current config to get API key
-	cfg, err := config.Load()
+	cfg, err := helpers.LoadConfigWithValidation()
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+		return err
 	}
 
-	if cfg.OpenAIKey == "" {
-		return fmt.Errorf("OpenAI API key not configured. Please run 'note setup' or 'note config set openai_key <your-key>' first")
+	if err := helpers.ValidateOpenAIKey(cfg); err != nil {
+		return err
 	}
 
 	fmt.Println("🔍 Fetching available OpenAI models...")
 
-	// Query OpenAI for available models
-	models, err := fetchOpenAIModels(cfg.OpenAIKey)
+	// Initialize OpenAI service and fetch models
+	openaiService, err := services.NewOpenAIService()
+	if err != nil {
+		return err
+	}
+
+	models, err := openaiService.GetAvailableModels()
 	if err != nil {
 		return fmt.Errorf("failed to fetch models: %w", err)
 	}
@@ -300,38 +293,9 @@ func configureModels() error {
 	return nil
 }
 
-func fetchOpenAIModels(apiKey string) ([]OpenAIModel, error) {
-	url := "https://api.openai.com/v1/models"
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", apiKey))
-	req.Header.Add("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected response status: %s", resp.Status)
-	}
-
-	var modelsResponse OpenAIModelsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&modelsResponse); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return modelsResponse.Data, nil
-}
-
-func filterTranscriptionModels(models []OpenAIModel) []OpenAIModel {
-	var transcriptionModels []OpenAIModel
+func filterTranscriptionModels(models []services.OpenAIModel) []services.OpenAIModel {
+	var transcriptionModels []services.OpenAIModel
 
 	for _, model := range models {
 		// Filter for audio/speech models suitable for transcription
@@ -364,7 +328,7 @@ func filterTranscriptionModels(models []OpenAIModel) []OpenAIModel {
 		}
 	}
 	if !hasWhisper {
-		transcriptionModels = append([]OpenAIModel{{
+		transcriptionModels = append([]services.OpenAIModel{{
 			ID:      "whisper-1",
 			Object:  "model",
 			OwnedBy: "openai",
@@ -374,8 +338,8 @@ func filterTranscriptionModels(models []OpenAIModel) []OpenAIModel {
 	return transcriptionModels
 }
 
-func filterChatModels(models []OpenAIModel) []OpenAIModel {
-	var chatModels []OpenAIModel
+func filterChatModels(models []services.OpenAIModel) []services.OpenAIModel {
+	var chatModels []services.OpenAIModel
 
 	for _, model := range models {
 		// Filter for chat completion models
