@@ -1,5 +1,8 @@
 # Note
 
+[![Test CLI](https://github.com/lukeymclukeface/note/actions/workflows/test-cli.yml/badge.svg)](https://github.com/lukeymclukeface/note/actions/workflows/test-cli.yml)
+[![Test Web](https://github.com/lukeymclukeface/note/actions/workflows/test-web.yml/badge.svg)](https://github.com/lukeymclukeface/note/actions/workflows/test-web.yml)
+
 A comprehensive AI-powered note-taking system that combines audio recording, transcription, and intelligent summarization capabilities.
 
 ## Project Structure

@@ -1,0 +1,51 @@
+name: Test Web
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'note-web/**'
+      - '.github/workflows/test-web.yml'
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'note-web/**'
+      - '.github/workflows/test-web.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'note-web/package-lock.json'
+    
+    - name: Change to web directory
+      run: cd note-web
+      
+    - name: Install dependencies
+      run: cd note-web && npm ci
+      
+    - name: Run linting
+      run: cd note-web && npm run lint
+      
+    - name: Run tests
+      run: cd note-web && npm test
+      
+    - name: Run tests with coverage
+      run: cd note-web && npm run test:coverage
+      
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-coverage-report
+        path: note-web/coverage/
+        
+    - name: Build application
+      run: cd note-web && npm run build
