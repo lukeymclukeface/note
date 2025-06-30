@@ -41,8 +41,17 @@ func init() {
 
 func importFile(cmd *cobra.Command, args []string) error {
 	var filePath string
+	
+	// Initialize services with verbose logging
+	verboseLogger := services.NewVerboseLogger(IsVerbose())
+	verboseLogger.StartCommand("import", args)
+	start := time.Now()
+	successful := true
+	
+	defer func() {
+		verboseLogger.EndCommand("import", time.Since(start), successful)
+	}()
 
-	// Initialize services
 	audioService := services.NewAudioService()
 	fileService := services.NewFileService()
 	uiService := services.NewUIService()
@@ -79,21 +88,38 @@ func importFile(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if file exists
+	verboseLogger.Step("Validating input file", fmt.Sprintf("File path: %s", filePath))
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		successful = false
+		verboseLogger.Error(err, "File validation failed")
 		return fmt.Errorf("file does not exist: %s", filePath)
 	}
 
 	// Determine file type and process accordingly
+	verboseLogger.Step("Determining file type", fmt.Sprintf("Extension: %s", filepath.Ext(filePath)))
 	if audioService.IsValidTextFile(filePath) {
-		return processTextFile(filePath, uiService, fileService)
+		verboseLogger.Debug("Processing as text file")
+		err := processTextFile(filePath, uiService, fileService, verboseLogger)
+		if err != nil {
+			successful = false
+		}
+		return err
 	} else if audioService.IsValidAudioFile(filePath) {
-		return processAudioFile(filePath, audioService, fileService, uiService)
+		verboseLogger.Debug("Processing as audio file")
+		err := processAudioFile(filePath, audioService, fileService, uiService, verboseLogger)
+		if err != nil {
+			successful = false
+		}
+		return err
 	} else {
-		return fmt.Errorf("invalid file format. Supported formats: mp3, wav, m4a, ogg, flac, md, txt. Got: %s", filepath.Ext(filePath))
+		successful = false
+		err := fmt.Errorf("invalid file format. Supported formats: mp3, wav, m4a, ogg, flac, md, txt. Got: %s", filepath.Ext(filePath))
+		verboseLogger.Error(err, "File type validation failed")
+		return err
 	}
 }
 
-func processTextFile(filePath string, uiService *services.UIService, fileService *services.FileService) error {
+func processTextFile(filePath string, uiService *services.UIService, fileService *services.FileService, verboseLogger *services.VerboseLogger) error {
 	// Load config and validate
 	cfg, db, err := helpers.LoadConfigAndDatabase()
 	if err != nil {
@@ -114,8 +140,10 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 	text := string(content)
 
 	// Initialize OpenAI service
-	openaiService, err := services.NewOpenAIService()
+	verboseLogger.Step("Initializing OpenAI service", "")
+	openaiService, err := services.NewOpenAIService(verboseLogger)
 	if err != nil {
+		verboseLogger.Error(err, "Failed to initialize OpenAI service")
 		return err
 	}
 
@@ -176,7 +204,7 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 	return nil
 }
 
-func processAudioFile(filePath string, audioService *services.AudioService, fileService *services.FileService, uiService *services.UIService) error {
+func processAudioFile(filePath string, audioService *services.AudioService, fileService *services.FileService, uiService *services.UIService, verboseLogger *services.VerboseLogger) error {
 	fmt.Println("🎵 Processing audio file...")
 
 	// Check dependencies
@@ -250,8 +278,10 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 	}
 
 	// Initialize OpenAI service
-	openaiService, err := services.NewOpenAIService()
+	verboseLogger.Step("Initializing OpenAI service", "")
+	openaiService, err := services.NewOpenAIService(verboseLogger)
 	if err != nil {
+		verboseLogger.Error(err, "Failed to initialize OpenAI service")
 		return err
 	}
 

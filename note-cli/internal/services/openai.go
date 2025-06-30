@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // OpenAIService handles all OpenAI API interactions
@@ -20,10 +21,11 @@ type OpenAIService struct {
 	transcriptionModel string
 	summaryModel       string
 	promptService      *PromptService
+	verboseLogger      *VerboseLogger
 }
 
 // NewOpenAIService creates a new OpenAI service instance
-func NewOpenAIService() (*OpenAIService, error) {
+func NewOpenAIService(verboseLogger *VerboseLogger) (*OpenAIService, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
@@ -43,11 +45,18 @@ func NewOpenAIService() (*OpenAIService, error) {
 		summaryModel = "gpt-3.5-turbo"
 	}
 
+	if verboseLogger != nil {
+		verboseLogger.Config("OpenAI API Key", cfg.OpenAIKey)
+		verboseLogger.Config("Transcription Model", transcriptionModel)
+		verboseLogger.Config("Summary Model", summaryModel)
+	}
+
 	return &OpenAIService{
 		apiKey:             cfg.OpenAIKey,
 		transcriptionModel: transcriptionModel,
 		summaryModel:       summaryModel,
 		promptService:      NewPromptService(),
+		verboseLogger:      verboseLogger,
 	}, nil
 }
 
@@ -96,18 +105,35 @@ func (s *OpenAIService) TranscribeAudioFile(filePath string) (string, error) {
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 
 	client := &http.Client{}
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.Step("Sending transcription request to OpenAI", fmt.Sprintf("File: %s, Model: %s", filepath.Base(filePath), s.transcriptionModel))
+	}
+
+	start := time.Now()
 	resp, err := client.Do(req)
+	duration := time.Since(start)
+
 	if err != nil {
+		if s.verboseLogger != nil {
+			s.verboseLogger.Error(err, "OpenAI transcription request failed")
+		}
 		return "", err
 	}
 	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.API("POST", url, nil, string(respBody), resp.StatusCode, duration)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("unexpected response status: %s", resp.Status)
 	}
 
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(respBody, &result); err != nil {
 		return "", err
 	}
 
@@ -138,11 +164,11 @@ func (s *OpenAIService) SummarizeText(text string) (string, error) {
 		"model": s.summaryModel,
 		"messages": []map[string]interface{}{
 			{
-				"role": "system",
+				"role":    "system",
 				"content": systemPrompt,
 			},
 			{
-				"role": "user",
+				"role":    "user",
 				"content": userPrompt,
 			},
 		},
@@ -161,20 +187,35 @@ func (s *OpenAIService) SummarizeText(text string) (string, error) {
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.Step("Sending legacy summary request to OpenAI", fmt.Sprintf("Model: %s, Content length: %d chars", s.summaryModel, len(text)))
+	}
+
+	start := time.Now()
 	resp, err := client.Do(req)
+	duration := time.Since(start)
+
 	if err != nil {
+		if s.verboseLogger != nil {
+			s.verboseLogger.Error(err, "OpenAI legacy summary request failed")
+		}
 		return "", err
 	}
 	defer resp.Body.Close()
 
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.API("POST", url, requestBody, string(respBody), resp.StatusCode, duration)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		// Read the error response body for more details
-		respBody, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("unexpected response status: %s - %s", resp.Status, string(respBody))
 	}
 
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(respBody, &result); err != nil {
 		return "", err
 	}
 
@@ -228,18 +269,35 @@ func (s *OpenAIService) GetAvailableModels() ([]OpenAIModel, error) {
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.Step("Fetching available models from OpenAI", "")
+	}
+
+	start := time.Now()
 	resp, err := client.Do(req)
+	duration := time.Since(start)
+
 	if err != nil {
+		if s.verboseLogger != nil {
+			s.verboseLogger.Error(err, "OpenAI models request failed")
+		}
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.API("GET", url, nil, string(respBody), resp.StatusCode, duration)
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected response status: %s", resp.Status)
 	}
 
 	var modelsResponse OpenAIModelsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&modelsResponse); err != nil {
+	if err := json.Unmarshal(respBody, &modelsResponse); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -255,7 +313,7 @@ type ContentAnalysis struct {
 // AnalyzeContentAndGenerateTitle analyzes content to determine its type and generates an appropriate title
 func (s *OpenAIService) AnalyzeContentAndGenerateTitle(content string) (*ContentAnalysis, error) {
 	// Truncate content if it's too long for analysis
-	maxInputLength := 50000 // About 12k tokens for analysis
+	maxInputLength := 400000 // About 12k tokens for analysis
 	analysisContent := content
 	if len(content) > maxInputLength {
 		analysisContent = content[:maxInputLength] + "\n\n[Content truncated for analysis...]"
@@ -268,28 +326,28 @@ func (s *OpenAIService) AnalyzeContentAndGenerateTitle(content string) (*Content
 	}
 
 	url := "https://api.openai.com/v1/chat/completions"
-	
+
 	// Create request payload
 	requestPayload := map[string]interface{}{
 		"model": s.summaryModel,
 		"messages": []map[string]interface{}{
 			{
-				"role": "system",
+				"role":    "system",
 				"content": systemPrompt,
 			},
 			{
-				"role": "user",
+				"role":    "user",
 				"content": userPrompt,
 			},
 		},
-		"max_completion_tokens": 200,
+		"max_completion_tokens": 10000,
 	}
-	
+
 	// Only add temperature for models that support it (not o3-mini)
 	if !strings.Contains(strings.ToLower(s.summaryModel), "o3") {
 		requestPayload["temperature"] = 0.3
 	}
-	
+
 	requestBody, err := json.Marshal(requestPayload)
 	if err != nil {
 		return nil, err
@@ -304,19 +362,35 @@ func (s *OpenAIService) AnalyzeContentAndGenerateTitle(content string) (*Content
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.Step("Sending content analysis request to OpenAI", fmt.Sprintf("Model: %s, Content length: %d chars", s.summaryModel, len(analysisContent)))
+	}
+
+	start := time.Now()
 	resp, err := client.Do(req)
+	duration := time.Since(start)
+
 	if err != nil {
+		if s.verboseLogger != nil {
+			s.verboseLogger.Error(err, "OpenAI content analysis request failed")
+		}
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.API("POST", url, requestPayload, string(respBody), resp.StatusCode, duration)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("unexpected response status: %s - %s", resp.Status, string(respBody))
 	}
 
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, err
 	}
 
@@ -364,28 +438,28 @@ func (s *OpenAIService) SummarizeByContentType(text string, contentType string) 
 	}
 
 	url := "https://api.openai.com/v1/chat/completions"
-	
+
 	// Create request payload
 	requestPayload := map[string]interface{}{
 		"model": s.summaryModel,
 		"messages": []map[string]interface{}{
 			{
-				"role": "system",
+				"role":    "system",
 				"content": systemPrompt,
 			},
 			{
-				"role": "user",
+				"role":    "user",
 				"content": userPrompt,
 			},
 		},
 		"max_completion_tokens": 100000,
 	}
-	
+
 	// Only add temperature for models that support it (not o3-mini)
 	if !strings.Contains(strings.ToLower(s.summaryModel), "o3") {
 		requestPayload["temperature"] = 0.7
 	}
-	
+
 	requestBody, err := json.Marshal(requestPayload)
 	if err != nil {
 		return "", err
@@ -400,19 +474,35 @@ func (s *OpenAIService) SummarizeByContentType(text string, contentType string) 
 	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.Step("Sending specialized summary request to OpenAI", fmt.Sprintf("Content Type: %s, Model: %s, Content length: %d chars", contentType, s.summaryModel, len(text)))
+	}
+
+	start := time.Now()
 	resp, err := client.Do(req)
+	duration := time.Since(start)
+
 	if err != nil {
+		if s.verboseLogger != nil {
+			s.verboseLogger.Error(err, "OpenAI specialized summary request failed")
+		}
 		return "", err
 	}
 	defer resp.Body.Close()
 
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if s.verboseLogger != nil {
+		s.verboseLogger.API("POST", url, requestPayload, string(respBody), resp.StatusCode, duration)
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("unexpected response status: %s - %s", resp.Status, string(respBody))
 	}
 
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(respBody, &result); err != nil {
 		return "", err
 	}
 

@@ -7,6 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Global verbose flag
+var verbose bool
+
 var rootCmd = &cobra.Command{
 	Use:   "note",
 	Short: "A simple note-taking CLI application",
@@ -26,5 +29,11 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("toggle", "t", false, "help message for toggle")
+	// Add global verbose flag
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output with detailed information")
+}
+
+// IsVerbose returns the current state of the verbose flag
+func IsVerbose() bool {
+	return verbose
 }

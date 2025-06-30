@@ -200,7 +200,7 @@ func configureModels() error {
 	fmt.Println("🔍 Fetching available OpenAI models...")
 
 	// Initialize OpenAI service and fetch models
-	openaiService, err := services.NewOpenAIService()
+	openaiService, err := services.NewOpenAIService(nil)
 	if err != nil {
 		return err
 	}
