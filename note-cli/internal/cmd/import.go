@@ -95,10 +95,11 @@ func importFile(cmd *cobra.Command, args []string) error {
 
 func processTextFile(filePath string, uiService *services.UIService, fileService *services.FileService) error {
 	// Load config and validate
-	cfg, err := helpers.LoadConfigWithValidation()
+	cfg, db, err := helpers.LoadConfigAndDatabase()
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	if err := helpers.ValidateOpenAIKey(cfg); err != nil {
 		return err
@@ -112,22 +113,36 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 
 	text := string(content)
 
-	// Initialize OpenAI service and summarize
+	// Initialize OpenAI service
 	openaiService, err := services.NewOpenAIService()
 	if err != nil {
 		return err
 	}
 
-	summary, err := uiService.RunTaskWithSpinner("📝 Creating summary using OpenAI", func() (interface{}, error) {
-		return openaiService.SummarizeText(text)
+	// Analyze content type and generate title
+	analysis, err := uiService.RunTaskWithSpinner("🔍 Analyzing content type and generating title", func() (interface{}, error) {
+		return openaiService.AnalyzeContentAndGenerateTitle(text)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to analyze content: %w", err)
+	}
+
+	contentAnalysis := analysis.(*services.ContentAnalysis)
+	fmt.Printf("📋 Detected content type: %s\n", contentAnalysis.ContentType)
+	fmt.Printf("📝 Generated title: %s\n", contentAnalysis.Title)
+
+	// Create specialized summary based on content type
+	summary, err := uiService.RunTaskWithSpinner(fmt.Sprintf("📝 Creating %s summary using OpenAI", contentAnalysis.ContentType), func() (interface{}, error) {
+		return openaiService.SummarizeByContentType(text, contentAnalysis.ContentType)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to summarize text: %w", err)
 	}
 
-	// Create notes directory
-	originalFilename := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
-	destinationDir, err := fileService.CreateNoteDirectory(originalFilename + "_summary")
+	// Create notes directory using the generated title
+	safeTitle := strings.ReplaceAll(contentAnalysis.Title, "/", "-")
+	safeTitle = strings.ReplaceAll(safeTitle, ":", "-")
+	destinationDir, err := fileService.CreateNoteDirectory(safeTitle)
 	if err != nil {
 		return err
 	}
@@ -139,8 +154,24 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 		return fmt.Errorf("failed to save summary file: %w", err)
 	}
 
+	// Create a metadata note in the database
+	folderName := filepath.Base(destinationDir)
+	noteContent := fmt.Sprintf("Text file imported and processed.\n\nContent Type: %s\n\nFiles:\n- Summary: %s\n\nFolder: %s",
+		contentAnalysis.ContentType, "summary.md", folderName)
+	tags := fmt.Sprintf("imported,text,%s,summary", contentAnalysis.ContentType)
+
+	_, err = uiService.RunTaskWithSpinner("📋 Creating metadata note", func() (interface{}, error) {
+		_, createErr := database.CreateNote(db, contentAnalysis.Title, noteContent, tags)
+		return nil, createErr
+	})
+	if err != nil {
+		return fmt.Errorf("failed to save metadata note: %w", err)
+	}
+
 	fmt.Printf("✅ Text file '%s' successfully processed and summarized:\n", filePath)
+	fmt.Printf("   📁 Saved to notes directory: %s\n", destinationDir)
 	fmt.Printf("   📝 Summary saved at: %s\n", summaryPath)
+	fmt.Printf("   📋 Note created: %s\n", contentAnalysis.Title)
 
 	return nil
 }
@@ -234,9 +265,21 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 
 	transcript := transcriptResult.(*services.ChunkedTranscriptionResult).FullTranscript
 
-	// Summarize the transcript
-	summary, err := uiService.RunTaskWithSpinner("📄 Creating summary from transcription", func() (interface{}, error) {
-		return openaiService.SummarizeText(transcript)
+	// Analyze content type and generate title
+	analysis, err := uiService.RunTaskWithSpinner("🔍 Analyzing content type and generating title", func() (interface{}, error) {
+		return openaiService.AnalyzeContentAndGenerateTitle(transcript)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to analyze content: %w", err)
+	}
+
+	contentAnalysis := analysis.(*services.ContentAnalysis)
+	fmt.Printf("📋 Detected content type: %s\n", contentAnalysis.ContentType)
+	fmt.Printf("📝 Generated title: %s\n", contentAnalysis.Title)
+
+	// Create specialized summary based on content type
+	summary, err := uiService.RunTaskWithSpinner(fmt.Sprintf("📄 Creating %s summary from transcription", contentAnalysis.ContentType), func() (interface{}, error) {
+		return openaiService.SummarizeByContentType(transcript, contentAnalysis.ContentType)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to summarize transcription: %w", err)
@@ -253,15 +296,53 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 		return fmt.Errorf("failed to save markdown files: %w", err)
 	}
 
+	// Update destination directory to use the generated title
+	safeTitle := strings.ReplaceAll(contentAnalysis.Title, "/", "-")
+	safeTitle = strings.ReplaceAll(safeTitle, ":", "-")
+	newDestinationDir, err := fileService.CreateNoteDirectory(safeTitle)
+	if err != nil {
+		return err
+	}
+
+	// Move files to the new directory with proper title
+	if newDestinationDir != destinationDir {
+		// Copy files to new location
+		newAudioPath := filepath.Join(newDestinationDir, filename)
+		if err := fileService.CopyFile(filepath.Join(destinationDir, filename), newAudioPath); err != nil {
+			return fmt.Errorf("failed to move MP3 file: %w", err)
+		}
+
+		// Copy markdown files to new location
+		newTranscriptionPath := filepath.Join(newDestinationDir, "transcription.md")
+		newSummaryPath := filepath.Join(newDestinationDir, "summary.md")
+		
+		if err := fileService.CopyFile(transcriptionPath, newTranscriptionPath); err != nil {
+			return fmt.Errorf("failed to move transcription file: %w", err)
+		}
+		
+		if err := fileService.CopyFile(summaryPath, newSummaryPath); err != nil {
+			return fmt.Errorf("failed to move summary file: %w", err)
+		}
+
+		// Remove old directory
+		if err := os.RemoveAll(destinationDir); err != nil {
+			fmt.Printf("Warning: failed to remove old directory %s: %v\n", destinationDir, err)
+		}
+
+		// Update paths
+		transcriptionPath = newTranscriptionPath
+		summaryPath = newSummaryPath
+		destinationDir = newDestinationDir
+	}
+
 	// Create a metadata note that references the files
-	title := fmt.Sprintf("Audio Import: %s", originalFilename)
 	folderName := filepath.Base(destinationDir)
-	content := fmt.Sprintf("Audio file imported and processed.\n\nFiles:\n- Audio: %s\n- Transcription: %s\n- Summary: %s\n\nFolder: %s",
-		filename, "transcription.md", "summary.md", folderName)
-	tags := "imported,audio,metadata"
+	noteContent := fmt.Sprintf("Audio file imported and processed.\n\nContent Type: %s\n\nFiles:\n- Audio: %s\n- Transcription: %s\n- Summary: %s\n\nFolder: %s",
+		contentAnalysis.ContentType, filename, "transcription.md", "summary.md", folderName)
+	tags := fmt.Sprintf("imported,audio,%s,transcription,summary", contentAnalysis.ContentType)
 
 	_, err = uiService.RunTaskWithSpinner("📋 Creating metadata note", func() (interface{}, error) {
-		_, createErr := database.CreateNote(db, title, content, tags)
+		_, createErr := database.CreateNote(db, contentAnalysis.Title, noteContent, tags)
 		return nil, createErr
 	})
 	if err != nil {
@@ -272,6 +353,6 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 	fmt.Printf("   📁 Saved to notes directory: %s\n", destinationDir)
 	fmt.Printf("   🎵 Added to recordings database\n")
 	fmt.Printf("   📝 Transcribed and summarized\n")
-	fmt.Printf("   📋 Note created: %s\n", title)
+	fmt.Printf("   📋 Note created: %s\n", contentAnalysis.Title)
 	return nil
 }
