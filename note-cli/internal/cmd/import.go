@@ -265,14 +265,21 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 		return fmt.Errorf("failed to get file info: %w", err)
 	}
 
+	// Get actual audio duration using ffprobe
+	durationSeconds, err := audioService.GetAudioDuration(newFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to get audio duration: %w", err)
+	}
+	duration := time.Duration(durationSeconds) * time.Second
+
 	// Add recording to database
 	now := time.Now()
 	recording := database.Recording{
 		Filename:   filename,
 		FilePath:   newFilePath,
 		StartTime:  now,
-		EndTime:    now,
-		Duration:   0, // We don't know the actual recording duration for imported files
+		EndTime:    now.Add(duration), // Set end time based on actual duration
+		Duration:   duration,           // Use actual duration from ffprobe
 		FileSize:   fileInfo.Size(),
 		Format:     "mp3",
 		SampleRate: 44100, // Default sample rate
