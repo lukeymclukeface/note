@@ -1,4 +1,5 @@
 name: Test Web
+# This workflow tests the React/Next.js web application
 
 on:
   push:

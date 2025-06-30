@@ -1,4 +1,5 @@
 name: Test CLI
+# This workflow tests the Go CLI application
 
 on:
   push:
