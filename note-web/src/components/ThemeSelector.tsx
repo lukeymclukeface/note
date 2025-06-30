@@ -28,7 +28,7 @@ export function ThemeSelector() {
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" data-testid="theme-selector" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
