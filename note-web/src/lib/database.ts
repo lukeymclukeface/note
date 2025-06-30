@@ -25,6 +25,18 @@ export interface Recording {
   created_at: string;
 }
 
+export interface CalendarEvent {
+  id: number;
+  title: string;
+  start: Date;
+  end: Date;
+  type: 'recording' | 'note';
+  duration: number; // in minutes
+  content?: string;
+  tags?: string;
+  filename?: string;
+}
+
 // Get the database path (same as CLI: ~/.noteai/notes.db)
 function getDatabasePath(): string {
   const homeDir = os.homedir();
@@ -110,4 +122,59 @@ export function getAllRecordings(): Recording[] {
     console.error('Error fetching recordings:', error);
     return [];
   }
+}
+
+// Get recordings for a specific date range
+export function getRecordingsInRange(startDate: Date, endDate: Date): Recording[] {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, filename, file_path, start_time, end_time, duration, 
+             file_size, format, sample_rate, channels, created_at 
+      FROM recordings 
+      WHERE start_time >= ? AND start_time <= ?
+      ORDER BY start_time ASC
+    `);
+    const recordings = stmt.all(startDate.toISOString(), endDate.toISOString()) as Recording[];
+    db.close();
+    return recordings;
+  } catch (error) {
+    console.error('Error fetching recordings in range:', error);
+    return [];
+  }
+}
+
+// Convert recordings to calendar events
+export function getCalendarEvents(startDate: Date, endDate: Date): CalendarEvent[] {
+  try {
+    const recordings = getRecordingsInRange(startDate, endDate);
+    
+    return recordings.map(recording => {
+      const start = new Date(recording.start_time);
+      const end = new Date(recording.end_time);
+      const durationMinutes = Math.round(recording.duration / (1000 * 1000 * 1000 * 60)); // Convert nanoseconds to minutes
+      
+      return {
+        id: recording.id,
+        title: recording.filename.replace(/\.[^/.]+$/, ''), // Remove file extension
+        start,
+        end,
+        type: 'recording' as const,
+        duration: durationMinutes,
+        filename: recording.filename,
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching calendar events:', error);
+    return [];
+  }
+}
+
+// Get events for a specific week
+export function getWeekEvents(weekStart: Date): CalendarEvent[] {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+  weekEnd.setHours(23, 59, 59, 999);
+  
+  return getCalendarEvents(weekStart, weekEnd);
 }
