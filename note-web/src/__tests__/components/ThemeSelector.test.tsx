@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, jest, beforeEach } from '@jest/globals'
+import { describe, it, expect } from '@jest/globals'
 import { ThemeSelector } from '@/components/ThemeSelector'
 import { ThemeProvider } from '@/providers/ThemeProvider'
 
