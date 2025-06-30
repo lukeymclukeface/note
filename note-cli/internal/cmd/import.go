@@ -160,7 +160,7 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 	fmt.Printf("📝 Generated title: %s\n", contentAnalysis.Title)
 
 	// Create specialized summary based on content type
-	summary, err := uiService.RunTaskWithSpinner(fmt.Sprintf("📝 Creating %s summary using OpenAI", contentAnalysis.ContentType), func() (interface{}, error) {
+	summaryResult, err := uiService.RunTaskWithSpinner(fmt.Sprintf("📝 Creating %s summary using OpenAI", contentAnalysis.ContentType), func() (interface{}, error) {
 		return openaiService.SummarizeByContentType(text, contentAnalysis.ContentType)
 	})
 	if err != nil {
@@ -175,12 +175,13 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 		return err
 	}
 
-	// Save the summary
-	summaryPath := filepath.Join(destinationDir, "summary.md")
-	transcriptionPath := filepath.Join(destinationDir, "transcription.md") // Empty for text files
-	if err := fileService.SaveMarkdownFiles("", summary.(string), transcriptionPath, summaryPath); err != nil {
-		return fmt.Errorf("failed to save summary file: %w", err)
-	}
+// Save the summary
+summaryStr := summaryResult.(string)
+summaryPath := filepath.Join(destinationDir, "summary.md")
+transcriptionPath := filepath.Join(destinationDir, "transcription.md") // Empty for text files
+if err := fileService.SaveMarkdownFiles("", summaryStr, transcriptionPath, summaryPath); err != nil {
+	return fmt.Errorf("failed to save summary file: %w", err)
+}
 
 	// Create a metadata note in the database
 	folderName := filepath.Base(destinationDir)
@@ -189,8 +190,17 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 	tags := fmt.Sprintf("imported,text,%s,summary", contentAnalysis.ContentType)
 
 	_, err = uiService.RunTaskWithSpinner("📋 Creating metadata note", func() (interface{}, error) {
-		_, createErr := database.CreateNote(db, contentAnalysis.Title, noteContent, tags)
-		return nil, createErr
+		switch contentAnalysis.ContentType {
+		case "meeting":
+			_, createErr := database.CreateMeeting(db, contentAnalysis.Title, noteContent, summaryStr, "", "", tags, nil, nil)
+			return nil, createErr
+		case "interview":
+			_, createErr := database.CreateInterview(db, contentAnalysis.Title, noteContent, summaryStr, "", "", "", "", tags, nil, nil)
+			return nil, createErr
+		default:
+			_, createErr := database.CreateNote(db, contentAnalysis.Title, noteContent, summaryStr, tags, nil)
+			return nil, createErr
+		}
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save metadata note: %w", err)
@@ -308,20 +318,21 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 	fmt.Printf("📝 Generated title: %s\n", contentAnalysis.Title)
 
 	// Create specialized summary based on content type
-	summary, err := uiService.RunTaskWithSpinner(fmt.Sprintf("📄 Creating %s summary from transcription", contentAnalysis.ContentType), func() (interface{}, error) {
+	summaryResult, err := uiService.RunTaskWithSpinner(fmt.Sprintf("📄 Creating %s summary from transcription", contentAnalysis.ContentType), func() (interface{}, error) {
 		return openaiService.SummarizeByContentType(transcript, contentAnalysis.ContentType)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to summarize transcription: %w", err)
 	}
 
-	// Save transcription and summary as separate markdown files
-	transcriptionPath := filepath.Join(destinationDir, "transcription.md")
-	summaryPath := filepath.Join(destinationDir, "summary.md")
+// Save transcription and summary as separate markdown files
+summaryStr := summaryResult.(string)
+transcriptionPath := filepath.Join(destinationDir, "transcription.md")
+summaryPath := filepath.Join(destinationDir, "summary.md")
 
-	_, err = uiService.RunTaskWithSpinner("📝 Saving transcription and summary files", func() (interface{}, error) {
-		return nil, fileService.SaveMarkdownFiles(transcript, summary.(string), transcriptionPath, summaryPath)
-	})
+_, err = uiService.RunTaskWithSpinner("📝 Saving transcription and summary files", func() (interface{}, error) {
+	return nil, fileService.SaveMarkdownFiles(transcript, summaryStr, transcriptionPath, summaryPath)
+})
 	if err != nil {
 		return fmt.Errorf("failed to save markdown files: %w", err)
 	}
@@ -372,8 +383,17 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 	tags := fmt.Sprintf("imported,audio,%s,transcription,summary", contentAnalysis.ContentType)
 
 	_, err = uiService.RunTaskWithSpinner("📋 Creating metadata note", func() (interface{}, error) {
-		_, createErr := database.CreateNote(db, contentAnalysis.Title, noteContent, tags)
-		return nil, createErr
+		switch contentAnalysis.ContentType {
+		case "meeting":
+			_, createErr := database.CreateMeeting(db, contentAnalysis.Title, noteContent, summaryStr, "", "", tags, nil, nil)
+			return nil, createErr
+		case "interview":
+			_, createErr := database.CreateInterview(db, contentAnalysis.Title, noteContent, summaryStr, "", "", "", "", tags, nil, nil)
+			return nil, createErr
+		default:
+			_, createErr := database.CreateNote(db, contentAnalysis.Title, noteContent, summaryStr, tags, nil)
+			return nil, createErr
+		}
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save metadata note: %w", err)
