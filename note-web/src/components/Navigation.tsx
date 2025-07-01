@@ -79,7 +79,7 @@ export default function Navigation() {
                     importNavigation.some(item => pathname === item.href)
                       ? 'border-blue-500 text-gray-900 dark:text-white'
                       : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200',
-                    'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium self-stretch'
+                    'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16'
                   )}
                 >
                   <span className="mr-1">📥</span>
@@ -115,7 +115,7 @@ export default function Navigation() {
             </div>
           
           {/* Secondary Navigation */}
-          <div className="hidden sm:ml-6 sm:flex sm:space-x-8 sm:items-center">
+          <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
             {secondaryNavigation.map((item) => (
               <Link
                 key={item.name}
@@ -124,14 +124,16 @@ export default function Navigation() {
                   pathname === item.href
                     ? 'border-blue-500 text-gray-900 dark:text-white'
                     : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200',
-                  'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium'
+                  'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16'
                 )}
               >
                 <span className="mr-2">{item.icon}</span>
                 {item.name}
               </Link>
             ))}
-            <ThemeSelector />
+            <div className="flex items-center">
+              <ThemeSelector />
+            </div>
           </div>
         </div>
         
