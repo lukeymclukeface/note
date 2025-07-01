@@ -151,7 +151,9 @@ export default function RecordingsPage() {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {recording.filename}
+                                <a href={`/recordings/${recording.id}`} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
+                                  {recording.filename.replace(/\.[^/.]+$/, '')}
+                                </a>
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
                                 ID: {recording.id}
