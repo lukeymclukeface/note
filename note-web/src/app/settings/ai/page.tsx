@@ -3,12 +3,23 @@
 import { useState, useEffect } from 'react';
 import { Config, maskApiKey, AI_PROVIDERS, OPENAI_TRANSCRIPTION_MODELS, OPENAI_SUMMARY_MODELS, GOOGLE_TRANSCRIPTION_MODELS, GOOGLE_SUMMARY_MODELS, GOOGLE_LOCATIONS } from '../types';
 
+interface OpenAIValidationResult {
+  valid: boolean;
+  error?: string;
+  details?: {
+    organizationId?: string;
+    models?: string[];
+  };
+}
+
 export default function AISettingsPage() {
   const [config, setConfig] = useState<Config | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Config>({});
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [isValidatingOpenAI, setIsValidatingOpenAI] = useState(false);
+  const [openAIValidation, setOpenAIValidation] = useState<OpenAIValidationResult | null>(null);
 
   useEffect(() => {
     loadConfig();
@@ -87,6 +98,51 @@ export default function AISettingsPage() {
     setMessage(null);
   };
 
+  const validateOpenAIKey = async () => {
+    if (!formData.openai_key) {
+      setMessage({type: 'error', text: 'No OpenAI API key to validate'});
+      return;
+    }
+
+    setIsValidatingOpenAI(true);
+    setMessage(null);
+    setOpenAIValidation(null);
+    
+    try {
+      const response = await fetch('/api/validate-openai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ apiKey: formData.openai_key }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        setMessage({type: 'error', text: `Validation failed: ${response.status} - ${text.substring(0, 100)}`});
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        setOpenAIValidation(result.validation);
+        if (result.validation.valid) {
+          setMessage({type: 'success', text: 'OpenAI API key is valid and working!'});
+        } else {
+          setMessage({type: 'error', text: `OpenAI API key validation failed: ${result.validation.error}`});
+        }
+      } else {
+        setMessage({type: 'error', text: result.error || 'Failed to validate API key'});
+      }
+    } catch (error) {
+      console.error('Failed to validate OpenAI key:', error);
+      setMessage({type: 'error', text: 'Failed to validate API key'});
+    } finally {
+      setIsValidatingOpenAI(false);
+    }
+  };
+
   if (!config) {
     return (
       <div className="text-center py-12">
@@ -137,6 +193,74 @@ export default function AISettingsPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">OpenAI Platform</a>
                 </p>
+                
+                {/* Validation Button and Results */}
+                {formData.openai_key && (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={validateOpenAIKey}
+                      disabled={isValidatingOpenAI}
+                      className="btn btn-sm btn-outline"
+                    >
+                      {isValidatingOpenAI ? (
+                        <span className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Validating...
+                        </span>
+                      ) : (
+                        '🔍 Validate API Key'
+                      )}
+                    </button>
+                    
+                    {/* Validation Results */}
+                    {openAIValidation && (
+                      <div className={`mt-3 p-3 rounded-md border ${
+                        openAIValidation.valid 
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                          : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                      }`}>
+                        <div className="flex items-center mb-2">
+                          <div className={`w-3 h-3 rounded-full mr-2 ${
+                            openAIValidation.valid ? 'bg-green-500' : 'bg-red-500'
+                          }`}></div>
+                          <span className={`text-sm font-medium ${
+                            openAIValidation.valid 
+                              ? 'text-green-800 dark:text-green-200'
+                              : 'text-red-800 dark:text-red-200'
+                          }`}>
+                            {openAIValidation.valid ? 'API Key Valid' : 'API Key Invalid'}
+                          </span>
+                        </div>
+                        
+                        {openAIValidation.valid && openAIValidation.details && (
+                          <div className="text-xs space-y-1">
+                            {openAIValidation.details.organizationId && (
+                              <p className="text-green-700 dark:text-green-300">
+                                <span className="font-medium">Organization:</span> {openAIValidation.details.organizationId}
+                              </p>
+                            )}
+                            {openAIValidation.details.models && openAIValidation.details.models.length > 0 && (
+                              <p className="text-green-700 dark:text-green-300">
+                                <span className="font-medium">Available models:</span> {openAIValidation.details.models.slice(0, 5).join(', ')}
+                                {openAIValidation.details.models.length > 5 && ` (+${openAIValidation.details.models.length - 5} more)`}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {!openAIValidation.valid && openAIValidation.error && (
+                          <p className="text-xs text-red-700 dark:text-red-300">
+                            <span className="font-medium">Error:</span> {openAIValidation.error}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
