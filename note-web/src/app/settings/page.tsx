@@ -48,6 +48,7 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [systemHealth, setSystemHealth] = useState<HealthCheck[]>([]);
   const [isLoadingHealth, setIsLoadingHealth] = useState(false);
+  const [installingDeps, setInstallingDeps] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadConfig();
@@ -86,6 +87,48 @@ export default function SettingsPage() {
     } finally {
       setIsLoadingHealth(false);
     }
+  };
+
+  const installDependency = async (dependencyName: string) => {
+    setInstallingDeps(prev => new Set(prev).add(dependencyName));
+    setMessage(null);
+    
+    try {
+      const response = await fetch('/api/install-dependency', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dependency: dependencyName }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setMessage({type: 'success', text: result.message});
+        // Refresh system health after successful installation
+        await loadSystemHealth();
+      } else {
+        setMessage({type: 'error', text: result.error});
+      }
+    } catch (error) {
+      console.error('Failed to install dependency:', error);
+      setMessage({type: 'error', text: 'Failed to install dependency'});
+    } finally {
+      setInstallingDeps(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(dependencyName);
+        return newSet;
+      });
+    }
+  };
+
+  const isBrewInstalled = () => {
+    return systemHealth.find(check => check.name === 'Homebrew')?.status === 'ok';
+  };
+
+  const canInstallDependency = (dependencyName: string) => {
+    return isBrewInstalled() && ['FFmpeg', 'FFprobe', 'Google Cloud CLI'].includes(dependencyName);
   };
 
   const handleInputChange = (field: keyof Config, value: string | string[]) => {
@@ -505,15 +548,42 @@ export default function SettingsPage() {
                             <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                               {check.name}
                             </span>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              check.status === 'ok' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                              check.status === 'missing' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
-                              'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                            }`}>
-                              {check.status === 'ok' ? 'Installed' :
-                               check.status === 'missing' ? 'Missing' :
-                               'Error'}
-                            </span>
+                            <div className="flex items-center space-x-2">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                check.status === 'ok' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                                check.status === 'missing' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+                                'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                              }`}>
+                                {check.status === 'ok' ? 'Installed' :
+                                 check.status === 'missing' ? 'Missing' :
+                                 'Error'}
+                              </span>
+                              {check.status === 'missing' && canInstallDependency(check.name) && (
+                                <button
+                                  type="button"
+                                  onClick={() => installDependency(check.name)}
+                                  disabled={installingDeps.has(check.name)}
+                                  className="text-xs px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md transition-colors duration-200 flex items-center space-x-1"
+                                >
+                                  {installingDeps.has(check.name) ? (
+                                    <>
+                                      <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                      <span>Installing...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                      </svg>
+                                      <span>Install</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
                           </div>
                           {check.version && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono truncate">
@@ -540,11 +610,23 @@ export default function SettingsPage() {
                 {systemHealth.some(check => check.status === 'missing') && (
                   <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                      <strong>Missing dependencies detected:</strong> Some features may not work properly. 
-                      {systemHealth.find(check => check.name === 'Homebrew' && check.status === 'missing') && (
-                        <span> Install Homebrew first, then use it to install missing tools.</span>
-                      )}
+                      <strong>Missing dependencies detected:</strong> Some features may not work properly.
                     </p>
+                    {systemHealth.find(check => check.name === 'Homebrew' && check.status === 'missing') ? (
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
+                        Install Homebrew first, then use it to install missing tools. Visit{' '}
+                        <a href="https://brew.sh" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline">
+                          brew.sh
+                        </a>{' '}
+                        for installation instructions.
+                      </p>
+                    ) : isBrewInstalled() && systemHealth.some(check => 
+                      check.status === 'missing' && canInstallDependency(check.name)
+                    ) ? (
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
+                        Click the "Install" button next to missing dependencies to install them using Homebrew.
+                      </p>
+                    ) : null}
                   </div>
                 )}
               </div>

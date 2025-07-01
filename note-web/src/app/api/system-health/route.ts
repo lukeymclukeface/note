@@ -44,7 +44,7 @@ export async function GET() {
       checkCommand('brew --version', 'Homebrew'),
       checkCommand('ffmpeg -version 2>/dev/null | head -1', 'FFmpeg'),
       checkCommand('ffprobe -version 2>/dev/null | head -1', 'FFprobe'),
-      checkCommand('gcloud version --format="value(Google Cloud SDK)" 2>/dev/null', 'Google Cloud CLI')
+      checkCommand('gcloud version 2>/dev/null | head -1', 'Google Cloud CLI')
     ]);
 
     return NextResponse.json({
