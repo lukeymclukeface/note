@@ -5,7 +5,7 @@ import path from 'path';
 import os from 'os';
 
 const UPLOAD_DIR = path.join(os.homedir(), '.noteai', 'import');
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 16 * 1024 * 1024 * 1024; // 16GB
 
 const SUPPORTED_TYPES = [
   // Audio files
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { success: false, message: 'File size exceeds 50MB limit' },
+        { success: false, message: 'File size exceeds 16GB limit' },
         { status: 400 }
       );
     }

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, jest } from '@jest/globals'
 import Navigation from '@/components/Navigation'
 import { ThemeProvider } from '@/providers/ThemeProvider'
@@ -54,14 +54,6 @@ describe('Navigation', () => {
     expect(calendarLinks).toHaveLength(2)
     expect(calendarLinks[0]).toHaveAttribute('href', '/calendar')
     
-    const recordingsLinks = screen.getAllByRole('link', { name: /Recordings/ })
-    expect(recordingsLinks).toHaveLength(2)
-    expect(recordingsLinks[0]).toHaveAttribute('href', '/recordings')
-    
-    const uploadLinks = screen.getAllByRole('link', { name: /Upload/ })
-    expect(uploadLinks).toHaveLength(2)
-    expect(uploadLinks[0]).toHaveAttribute('href', '/upload')
-    
     // Check secondary navigation
     const settingsLinks = screen.getAllByRole('link', { name: /Settings/ })
     expect(settingsLinks).toHaveLength(2)
@@ -77,8 +69,9 @@ describe('Navigation', () => {
     expect(screen.getAllByText('🤝')).toHaveLength(2) // Meetings
     expect(screen.getAllByText('💼')).toHaveLength(2) // Interviews
     expect(screen.getAllByText('📅')).toHaveLength(2) // Calendar
-    expect(screen.getAllByText('🎤')).toHaveLength(2) // Recordings
-    expect(screen.getAllByText('📤')).toHaveLength(2) // Upload
+    expect(screen.getAllByText('📥')).toHaveLength(1) // Import dropdown icon (only in desktop)
+    expect(screen.getAllByText('🎤')).toHaveLength(1) // Recordings (only in mobile, dropdown hidden by default)
+    expect(screen.getAllByText('📤')).toHaveLength(1) // Upload (only in mobile, dropdown hidden by default)
     expect(screen.getAllByText('⚙️')).toHaveLength(2) // Settings
   })
 
@@ -160,8 +153,8 @@ describe('Navigation', () => {
     expect(screen.getAllByRole('link', { name: /Meetings/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Interviews/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Calendar/ })).toHaveLength(2)
-    expect(screen.getAllByRole('link', { name: /Recordings/ })).toHaveLength(2)
-    expect(screen.getAllByRole('link', { name: /Upload/ })).toHaveLength(2)
+    expect(screen.getAllByRole('link', { name: /Recordings/ })).toHaveLength(1) // Only in mobile (desktop is in dropdown)
+    expect(screen.getAllByRole('link', { name: /Upload/ })).toHaveLength(1) // Only in mobile (desktop is in dropdown)
     expect(screen.getAllByRole('link', { name: /Settings/ })).toHaveLength(2)
     
     // Check that mobile menu elements are present
@@ -178,5 +171,74 @@ describe('Navigation', () => {
     
     // Check mobile menu button has screen reader text
     expect(screen.getByText('Open main menu')).toBeInTheDocument()
+  })
+
+  it('shows Import dropdown when clicked', () => {
+    render(<NavigationWrapper />)
+    
+    // Find the Import button
+    const importButton = screen.getByRole('button', { name: '📥 Import' })
+    expect(importButton).toBeInTheDocument()
+    
+    // Initially, dropdown items should not be visible in desktop dropdown
+    // Since dropdown is closed, dropdown items shouldn't be visible
+    // We check by looking for the dropdown container specifically
+    expect(screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')).toBeNull()
+    
+    // Click the Import button
+    fireEvent.click(importButton)
+    
+    // Now dropdown items should be visible - we need to look for them specifically in the dropdown
+    // Since there are already recordings/upload links in mobile, we check for the dropdown container
+    const dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    expect(dropdownContainer).toBeInTheDocument()
+  })
+
+  it('closes Import dropdown when clicking outside', () => {
+    render(<NavigationWrapper />)
+    
+    const importButton = screen.getByRole('button', { name: '📥 Import' })
+    
+    // Open the dropdown
+    fireEvent.click(importButton)
+    let dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    expect(dropdownContainer).toBeInTheDocument()
+    
+    // Click outside the dropdown
+    fireEvent.mouseDown(document.body)
+    
+    // Dropdown should close
+    dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    expect(dropdownContainer).toBeNull()
+  })
+
+  it('closes Import dropdown when clicking a link', () => {
+    render(<NavigationWrapper />)
+    
+    const importButton = screen.getByRole('button', { name: '📥 Import' })
+    
+    // Open the dropdown
+    fireEvent.click(importButton)
+    let dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    expect(dropdownContainer).toBeInTheDocument()
+    
+    // Find and click a link in the dropdown
+    const dropdownRecordingsLink = dropdownContainer?.querySelector('a[href="/recordings"]')
+    expect(dropdownRecordingsLink).toBeInTheDocument()
+    fireEvent.click(dropdownRecordingsLink!)
+    
+    // Dropdown should close
+    dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    expect(dropdownContainer).toBeNull()
+  })
+
+  it('highlights Import dropdown when on recordings or upload page', () => {
+    // Mock being on recordings page
+    mockUsePathname.mockReturnValue('/recordings')
+    
+    render(<NavigationWrapper />)
+    
+    const importButton = screen.getByRole('button', { name: '📥 Import' })
+    expect(importButton).toHaveClass('border-blue-500')
   })
 })

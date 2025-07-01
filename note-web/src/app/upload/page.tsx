@@ -59,12 +59,12 @@ export default function UploadPage() {
       return;
     }
 
-    // Validate file size (50MB limit)
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Validate file size (16GB limit)
+    const maxSize = 16 * 1024 * 1024 * 1024; // 16GB
     if (file.size > maxSize) {
       setUploadResult({
         success: false,
-        message: 'File size must be less than 50MB'
+        message: 'File size must be less than 16GB'
       });
       return;
     }
@@ -155,7 +155,7 @@ export default function UploadPage() {
                       <span className="font-medium text-blue-600 dark:text-blue-400">Click to upload</span> or drag and drop
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Maximum file size: 50MB
+                      Maximum file size: 16GB
                     </p>
                   </div>
                 </>
