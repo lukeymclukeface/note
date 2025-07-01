@@ -8,9 +8,10 @@ import { formatDuration } from '@/lib/dateUtils';
 interface AudioPlayerProps {
   src: string;
   filename: string;
+  databaseDuration?: number; // Duration in seconds from database
 }
 
-function AudioPlayer({ src, filename }: AudioPlayerProps) {
+function AudioPlayer({ src, filename, databaseDuration }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -30,23 +31,49 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
     };
     
     const updateDuration = () => {
-      if (audio.duration && !isNaN(audio.duration)) {
+      console.log('updateDuration called, audio.duration:', audio.duration, 'isFinite:', isFinite(audio.duration), 'databaseDuration:', databaseDuration);
+      if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
         setIsLoaded(true);
+        setAudioError(null);
+      } else if (databaseDuration && databaseDuration > 0) {
+        console.log('Using database duration as fallback:', databaseDuration);
+        setDuration(databaseDuration);
+        setIsLoaded(true);
+        setAudioError(null);
+      } else if (audio.duration === Infinity || isNaN(audio.duration)) {
+        console.warn('Invalid audio duration detected:', audio.duration);
+        if (!databaseDuration || databaseDuration <= 0) {
+          setAudioError('Unable to determine audio duration. The audio file may be corrupted or streaming.');
+        }
       }
     };
     
     const handleLoadedData = () => {
-      if (audio.duration && !isNaN(audio.duration)) {
+      console.log('handleLoadedData called, audio.duration:', audio.duration);
+      if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
         setIsLoaded(true);
+        setAudioError(null);
+      } else if (databaseDuration && databaseDuration > 0) {
+        console.log('Using database duration as fallback in handleLoadedData:', databaseDuration);
+        setDuration(databaseDuration);
+        setIsLoaded(true);
+        setAudioError(null);
       }
     };
     
     const handleCanPlay = () => {
-      if (audio.duration && !isNaN(audio.duration)) {
+      console.log('handleCanPlay called, audio.duration:', audio.duration);
+      if (audio.duration && isFinite(audio.duration) && audio.duration > 0) {
         setDuration(audio.duration);
         setIsLoaded(true);
+        setAudioError(null);
+      } else if (databaseDuration && databaseDuration > 0) {
+        console.log('Using database duration as fallback in handleCanPlay:', databaseDuration);
+        setDuration(databaseDuration);
+        setIsLoaded(true);
+        setAudioError(null);
       }
     };
     
@@ -85,7 +112,17 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('error', handleError);
     };
-  }, []);
+  }, [databaseDuration]);
+
+  // Initialize with database duration if available and audio duration isn't loaded
+  useEffect(() => {
+    if (databaseDuration && databaseDuration > 0 && (!duration || duration <= 0)) {
+      console.log('Initializing with database duration:', databaseDuration);
+      setDuration(databaseDuration);
+      setIsLoaded(true);
+      setAudioError(null);
+    }
+  }, [databaseDuration, duration]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -101,10 +138,10 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
-    if (!audio || !duration || isNaN(duration)) return;
+    if (!audio || !duration || !isFinite(duration) || duration <= 0) return;
 
     const newTime = parseFloat(e.target.value);
-    if (!isNaN(newTime) && newTime >= 0 && newTime <= duration) {
+    if (!isNaN(newTime) && isFinite(newTime) && newTime >= 0 && newTime <= duration) {
       audio.currentTime = newTime;
       setCurrentTime(newTime);
     }
@@ -120,7 +157,7 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
   };
 
   const formatTimeDisplay = (time: number) => {
-    if (!time || isNaN(time)) {
+    if (!time || isNaN(time) || !isFinite(time)) {
       return '0:00';
     }
     const minutes = Math.floor(time / 60);
@@ -159,10 +196,10 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
           <input
             type="range"
             min="0"
-            max={isLoaded && duration && !isNaN(duration) ? duration : 100}
-            value={isLoaded && !isNaN(currentTime) ? currentTime : 0}
+            max={isLoaded && duration && isFinite(duration) && duration > 0 ? duration : 100}
+            value={isLoaded && isFinite(currentTime) ? currentTime : 0}
             onChange={handleSeek}
-            disabled={!isLoaded || !duration || isNaN(duration)}
+            disabled={!isLoaded || !duration || !isFinite(duration) || duration <= 0}
             className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
@@ -349,6 +386,7 @@ export default function RecordingDetailsPage() {
             <AudioPlayer 
               src={`/api/recordings/${recording.id}/audio`}
               filename={recording.filename}
+              databaseDuration={durationSeconds}
             />
           </div>
 
