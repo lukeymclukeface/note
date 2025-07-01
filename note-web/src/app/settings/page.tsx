@@ -12,15 +12,18 @@ type Config = {
   editor?: string;
   date_format?: string;
   default_tags?: string[];
+  notes_dir?: string;
+  database_path?: string;
+  // OpenAI Configuration
   openai_key?: string;
+  // Google AI Configuration
+  google_project_id?: string;
+  google_location?: string;
+  // Model/Provider Configuration
   transcription_provider?: string;
   transcription_model?: string;
   summary_provider?: string;
   summary_model?: string;
-  google_project_id?: string;
-  google_location?: string;
-  notes_dir?: string;
-  database_path?: string;
 };
 
 interface HealthCheck {
@@ -332,9 +335,9 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* AI Configuration */}
+{/* OpenAI Configuration */}
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">AI Configuration</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">OpenAI Configuration</h2>
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -351,6 +354,52 @@ export default function SettingsPage() {
                     <p className="text-xs text-red-600 dark:text-red-400 mt-1">⚠️ API key not configured</p>
                   )}
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Google AI Configuration */}
+          {(formData.transcription_provider === 'google' || formData.summary_provider === 'google') && (
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Google AI Configuration</h2>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Google Project ID</label>
+                    <input
+                      type="text"
+                      value={formData.google_project_id || ''}
+                      onChange={(e) => handleInputChange('google_project_id', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
+                      disabled={!isEditing}
+                      placeholder="your-google-project-id"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Google Location</label>
+                    <select
+                      value={formData.google_location || ''}
+                      onChange={(e) => handleInputChange('google_location', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
+                      disabled={!isEditing}
+                    >
+                      {GOOGLE_LOCATIONS.map((location) => (
+                        <option key={location} value={location}>
+                          {location}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+          
+          {/* Model/Provider Configuration */}
+          <section>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Model/Provider Configuration</h2>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Transcription Provider</label>
                   <select
@@ -411,36 +460,6 @@ export default function SettingsPage() {
                     ))}
                   </select>
                 </div>
-                {(formData.transcription_provider === 'google' || formData.summary_provider === 'google') && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Google Project ID</label>
-                      <input
-                        type="text"
-                        value={formData.google_project_id || ''}
-                        onChange={(e) => handleInputChange('google_project_id', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                        disabled={!isEditing}
-                        placeholder="your-google-project-id"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Google Location</label>
-                      <select
-                        value={formData.google_location || ''}
-                        onChange={(e) => handleInputChange('google_location', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                        disabled={!isEditing}
-                      >
-                        {GOOGLE_LOCATIONS.map((location) => (
-                          <option key={location} value={location}>
-                            {location}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
           </section>

@@ -7,14 +7,17 @@ export interface AppConfig {
   editor: string;
   date_format: string;
   default_tags: string[];
-  openai_key: string;
   database_path: string;
-  transcription_model: string;
-  summary_model: string;
-  transcription_provider: string;
-  summary_provider: string;
+  // OpenAI Configuration
+  openai_key: string;
+  // Google AI Configuration
   google_project_id: string;
   google_location: string;
+  // Model/Provider Configuration
+  transcription_provider: string;
+  transcription_model: string;
+  summary_provider: string;
+  summary_model: string;
 }
 
 // Get the config file path (same as CLI: ~/.noteai/config.json)
