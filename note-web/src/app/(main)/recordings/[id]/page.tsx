@@ -16,23 +16,74 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
+    const updateTime = () => {
+      if (!isNaN(audio.currentTime)) {
+        setCurrentTime(audio.currentTime);
+      }
+    };
+    
+    const updateDuration = () => {
+      if (audio.duration && !isNaN(audio.duration)) {
+        setDuration(audio.duration);
+        setIsLoaded(true);
+      }
+    };
+    
+    const handleLoadedData = () => {
+      if (audio.duration && !isNaN(audio.duration)) {
+        setDuration(audio.duration);
+        setIsLoaded(true);
+      }
+    };
+    
+    const handleCanPlay = () => {
+      if (audio.duration && !isNaN(audio.duration)) {
+        setDuration(audio.duration);
+        setIsLoaded(true);
+      }
+    };
+    
     const handleEnded = () => setIsPlaying(false);
+    
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    
+    const handleError = () => {
+      setAudioError('Unable to load audio file. The file may be corrupted or in an unsupported format.');
+      setIsLoaded(false);
+      setIsPlaying(false);
+    };
 
     audio.addEventListener('timeupdate', updateTime);
     audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('loadeddata', handleLoadedData);
+    audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
+
+    // Try to load duration immediately if already available
+    if (audio.readyState >= 1) {
+      updateDuration();
+    }
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime);
       audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('loadeddata', handleLoadedData);
+      audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('error', handleError);
     };
   }, []);
 
@@ -50,11 +101,13 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !duration || isNaN(duration)) return;
 
     const newTime = parseFloat(e.target.value);
-    audio.currentTime = newTime;
-    setCurrentTime(newTime);
+    if (!isNaN(newTime) && newTime >= 0 && newTime <= duration) {
+      audio.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,6 +120,9 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
   };
 
   const formatTimeDisplay = (time: number) => {
+    if (!time || isNaN(time)) {
+      return '0:00';
+    }
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -103,14 +159,15 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
           <input
             type="range"
             min="0"
-            max={duration || 0}
-            value={currentTime}
+            max={isLoaded && duration && !isNaN(duration) ? duration : 100}
+            value={isLoaded && !isNaN(currentTime) ? currentTime : 0}
             onChange={handleSeek}
-            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+            disabled={!isLoaded || !duration || isNaN(duration)}
+            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
             <span>{formatTimeDisplay(currentTime)}</span>
-            <span>{formatTimeDisplay(duration)}</span>
+            <span>{isLoaded ? formatTimeDisplay(duration) : 'Loading...'}</span>
           </div>
         </div>
 
@@ -133,10 +190,22 @@ function AudioPlayer({ src, filename }: AudioPlayerProps) {
           </span>
         </div>
 
+        {/* Error Message */}
+        {audioError && (
+          <div className="text-center text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+            <svg className="w-5 h-5 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {audioError}
+          </div>
+        )}
+
         {/* File Info */}
-        <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
-          Playing: {filename}
-        </div>
+        {!audioError && (
+          <div className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            Playing: {filename}
+          </div>
+        )}
       </div>
     </div>
   );
