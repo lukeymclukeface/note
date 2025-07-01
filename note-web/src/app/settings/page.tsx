@@ -5,6 +5,8 @@ import { Config, HealthCheck, COMMON_EDITORS, DATE_FORMATS } from './types';
 
 export default function GeneralSettingsPage() {
   const [config, setConfig] = useState<Config | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [configExists, setConfigExists] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Config>({});
   const [tagInput, setTagInput] = useState('');
@@ -20,18 +22,30 @@ export default function GeneralSettingsPage() {
   }, []);
 
   const loadConfig = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch('/api/config');
       const data = await response.json();
+      
       if (data.success) {
         setConfig(data.config);
         setFormData(data.config);
-      } else {
+        setConfigExists(true);
+      } else if (response.status === 404 && data.error === 'Configuration file not found') {
+        // Config file doesn't exist - this is a setup scenario, not an error
         setConfig(null);
+        setConfigExists(false);
+      } else {
+        // Actual error reading config
+        setConfig(null);
+        setConfigExists(true); // File exists but has issues
       }
     } catch (error) {
       console.error('Failed to load config:', error);
       setConfig(null);
+      setConfigExists(true); // Assume file exists but network/other issues
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -140,6 +154,7 @@ export default function GeneralSettingsPage() {
       
       if (result.success) {
         setConfig(formData);
+        setConfigExists(true);
         setIsEditing(false);
         setMessage({type: 'success', text: 'Configuration saved successfully!'});
       } else {
@@ -164,14 +179,85 @@ export default function GeneralSettingsPage() {
   };
 
 
-  if (!config) {
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">⏳</div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Loading Configuration</h1>
+        <p className="text-gray-600 dark:text-gray-300 mb-8">
+          Checking configuration file...
+        </p>
+      </div>
+    );
+  }
+
+  // Show setup component if config doesn't exist
+  if (!config && !configExists) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">🚀</div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Welcome to Note AI</h1>
+        <p className="text-gray-600 dark:text-gray-300 mb-8">
+          Let's get you set up! The CLI configuration file doesn't exist yet.
+        </p>
+        
+        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-left">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Getting Started</h2>
+          <div className="space-y-4">
+            <div className="border-l-4 border-blue-500 pl-4">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Step 1: Install the CLI</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Make sure you have the Note AI CLI installed and available in your PATH.
+              </p>
+            </div>
+            
+            <div className="border-l-4 border-blue-500 pl-4">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Step 2: Initialize Configuration</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Run any CLI command to create the initial configuration file:
+              </p>
+              <code className="block bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-2 rounded font-mono text-sm">
+                note --help
+              </code>
+            </div>
+            
+            <div className="border-l-4 border-blue-500 pl-4">
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Step 3: Refresh This Page</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Once the configuration file is created, refresh this page to access your settings.
+              </p>
+            </div>
+          </div>
+          
+          <div className="mt-6 flex justify-center">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors duration-200"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if config exists but couldn't be loaded
+  if (!config && configExists) {
     return (
       <div className="text-center py-12">
         <div className="text-6xl mb-4">❌</div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Configuration Error</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
-          Unable to read the configuration file. Please check if the CLI is set up.
+          Unable to read the configuration file. Please check if the CLI is set up correctly.
         </p>
+        <button 
+          onClick={loadConfig} 
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors duration-200"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
