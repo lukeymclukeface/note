@@ -112,16 +112,17 @@ export async function POST(request: Request) {
 
     // Try to make a simple API call to verify everything works
     try {
-      // Test with a simple location list call to AI Platform
+      // Test with a simple service account list call which requires basic API access
+      // This is a lightweight test that confirms the project is accessible and APIs work
       await execAsync(
-        `gcloud ai-platform locations list --project=${projectId} --format="value(name)" --limit=1`
+        `gcloud iam service-accounts list --project=${projectId} --limit=1 --format="value(email)" 2>/dev/null`
       );
       
       validation.valid = true;
       validation.error = undefined;
     } catch (error) {
       const err = error as { message?: string };
-      validation.error = `API test failed: ${err.message || 'Unknown error'}`;
+      validation.error = `API test failed: ${err.message || 'Unknown error'}. Check project permissions and API access.`;
     }
 
     return NextResponse.json({
