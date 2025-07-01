@@ -100,7 +100,9 @@ export default function RecordingsPage() {
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {recordings.map((recording) => {
-                    const durationMinutes = Math.round(recording.duration / (1000 * 1000 * 1000 * 60));
+                    // Convert nanoseconds to seconds, then to minutes
+                    const durationSeconds = recording.duration / (1000 * 1000 * 1000);
+                    const durationMinutes = Math.round(durationSeconds / 60);
                     const startTime = new Date(recording.start_time);
                     const endTime = new Date(recording.end_time);
                     

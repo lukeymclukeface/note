@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import os from 'os';
+import fs from 'fs';
 
 export interface Note {
   id: number;
@@ -75,10 +76,141 @@ function getDatabasePath(): string {
   return path.join(homeDir, '.noteai', 'notes.db');
 }
 
-// Initialize database connection
-function getDatabase(): Database.Database {
+// Create database directory if it doesn't exist
+function ensureDatabaseDirectory(): void {
   const dbPath = getDatabasePath();
-  const db = new Database(dbPath, { readonly: true });
+  const dbDir = path.dirname(dbPath);
+  
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+}
+
+// Initialize database schema
+function initializeDatabase(db: Database.Database): void {
+  // Create recordings table first (referenced by other tables)
+  const createRecordingsTableSQL = `
+    CREATE TABLE IF NOT EXISTS recordings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      filename TEXT NOT NULL,
+      file_path TEXT NOT NULL UNIQUE,
+      start_time DATETIME NOT NULL,
+      end_time DATETIME NOT NULL,
+      duration INTEGER NOT NULL,
+      file_size INTEGER NOT NULL,
+      format TEXT NOT NULL,
+      sample_rate INTEGER NOT NULL,
+      channels INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+  
+  // Create notes table
+  const createNotesTableSQL = `
+    CREATE TABLE IF NOT EXISTS notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      summary TEXT DEFAULT '',
+      tags TEXT DEFAULT '',
+      recording_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE SET NULL
+    );
+  `;
+  
+  // Create meetings table
+  const createMeetingsTableSQL = `
+    CREATE TABLE IF NOT EXISTS meetings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      summary TEXT DEFAULT '',
+      attendees TEXT DEFAULT '',
+      location TEXT DEFAULT '',
+      tags TEXT DEFAULT '',
+      recording_id INTEGER,
+      meeting_date TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE SET NULL
+    );
+  `;
+  
+  // Create interviews table
+  const createInterviewsTableSQL = `
+    CREATE TABLE IF NOT EXISTS interviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      summary TEXT DEFAULT '',
+      interviewee TEXT DEFAULT '',
+      interviewer TEXT DEFAULT '',
+      company TEXT DEFAULT '',
+      position TEXT DEFAULT '',
+      tags TEXT DEFAULT '',
+      recording_id INTEGER,
+      interview_date TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (recording_id) REFERENCES recordings(id) ON DELETE SET NULL
+    );
+  `;
+  
+  // Execute table creation statements
+  db.exec(createRecordingsTableSQL);
+  db.exec(createNotesTableSQL);
+  db.exec(createMeetingsTableSQL);
+  db.exec(createInterviewsTableSQL);
+}
+
+// Check if required tables exist
+function tablesExist(db: Database.Database): boolean {
+  const tables = ['recordings', 'notes', 'meetings', 'interviews'];
+  
+  for (const table of tables) {
+    const result = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
+    ).get(table);
+    
+    if (!result) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+// Initialize database connection with automatic setup
+function getDatabase(readonly: boolean = true): Database.Database {
+  const dbPath = getDatabasePath();
+  
+  // Ensure database directory exists
+  ensureDatabaseDirectory();
+  
+  // Check if database file exists
+  const dbExists = fs.existsSync(dbPath);
+  
+  // Open database connection
+  const db = new Database(dbPath, { readonly: readonly && dbExists });
+  
+  // If database is new or tables don't exist, initialize schema
+  if (!dbExists || !tablesExist(db)) {
+    // If we're in readonly mode but need to create tables, reopen in write mode
+    if (readonly) {
+      db.close();
+      const writeDb = new Database(dbPath, { readonly: false });
+      initializeDatabase(writeDb);
+      writeDb.close();
+      
+      // Reopen in readonly mode
+      return new Database(dbPath, { readonly: true });
+    } else {
+      initializeDatabase(db);
+    }
+  }
+  
   return db;
 }
 
@@ -242,7 +374,9 @@ export function getCalendarEvents(startDate: Date, endDate: Date): CalendarEvent
     return recordings.map(recording => {
       const start = new Date(recording.start_time);
       const end = new Date(recording.end_time);
-      const durationMinutes = Math.round(recording.duration / (1000 * 1000 * 1000 * 60)); // Convert nanoseconds to minutes
+      // Convert nanoseconds to seconds, then to minutes
+      const durationSeconds = recording.duration / (1000 * 1000 * 1000);
+      const durationMinutes = Math.round(durationSeconds / 60);
       
       return {
         id: recording.id,
@@ -362,8 +496,7 @@ export function insertRecording(recordingData: {
   channels: number;
 }): number | null {
   try {
-    const dbPath = getDatabasePath();
-    const db = new Database(dbPath, { readonly: false });
+    const db = getDatabase(false); // Open in write mode
     
     const stmt = db.prepare(`
       INSERT INTO recordings (
@@ -393,6 +526,55 @@ export function insertRecording(recordingData: {
   }
 }
 
+// Validate database and schema integrity
+export function validateDatabase(): { valid: boolean; message: string; tables: string[] } {
+  try {
+    const dbPath = getDatabasePath();
+    
+    // Check if database file exists
+    if (!fs.existsSync(dbPath)) {
+      return {
+        valid: false,
+        message: 'Database file does not exist',
+        tables: []
+      };
+    }
+    
+    const db = getDatabase();
+    
+    // Get list of tables
+    const tablesResult = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+    ).all() as { name: string }[];
+    
+    const tableNames = tablesResult.map(row => row.name);
+    const expectedTables = ['recordings', 'notes', 'meetings', 'interviews'];
+    const missingTables = expectedTables.filter(table => !tableNames.includes(table));
+    
+    db.close();
+    
+    if (missingTables.length > 0) {
+      return {
+        valid: false,
+        message: `Missing tables: ${missingTables.join(', ')}`,
+        tables: tableNames
+      };
+    }
+    
+    return {
+      valid: true,
+      message: 'Database schema is valid',
+      tables: tableNames
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      message: `Database validation error: ${error}`,
+      tables: []
+    };
+  }
+}
+
 // Get summary statistics
 export function getDashboardStats() {
   try {
@@ -412,7 +594,7 @@ export function getDashboardStats() {
       meetings: meetingsCount.count,
       interviews: interviewsCount.count,
       recordings: recordingsCount.count,
-      totalDurationMinutes: totalDuration.total ? Math.round(totalDuration.total / (1000 * 1000 * 1000 * 60)) : 0,
+      totalDurationMinutes: totalDuration.total ? Math.round((totalDuration.total / (1000 * 1000 * 1000)) / 60) : 0,
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
