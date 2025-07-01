@@ -20,8 +20,40 @@ export default function RecordingsPage() {
     }
   };
 
+  const fetchSingleRecording = async (recordingId: number) => {
+    try {
+      const response = await fetch(`/api/recordings/${recordingId}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.recording) {
+          // Add the new recording to the top of the list
+          setRecordings(prev => [result.recording, ...prev]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching new recording:', error);
+    }
+  };
+
   useEffect(() => {
     fetchRecordings();
+    
+    // Listen for recording completion events
+    const handleRecordingCompleted = (event: CustomEvent) => {
+      const { recordingId } = event.detail;
+      if (recordingId) {
+        // Fetch the complete recording data and add it to the list
+        fetchSingleRecording(recordingId);
+      }
+    };
+    
+    // Add event listener for real-time updates
+    window.addEventListener('recordingCompleted', handleRecordingCompleted as EventListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('recordingCompleted', handleRecordingCompleted as EventListener);
+    };
   }, []);
 
   const formatFileSize = (bytes: number): string => {

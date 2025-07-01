@@ -183,7 +183,7 @@ function tablesExist(db: Database.Database): boolean {
 }
 
 // Initialize database connection with automatic setup
-function getDatabase(readonly: boolean = true): Database.Database {
+export function getDatabase(readonly: boolean = true): Database.Database {
   const dbPath = getDatabasePath();
   
   // Ensure database directory exists

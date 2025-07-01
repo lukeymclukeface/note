@@ -79,7 +79,19 @@ export default function NavbarRecorder({ onRecordingComplete }: NavbarRecorderPr
           
           if (result.success) {
             onRecordingComplete?.();
-            // If we're on the recordings page, refresh it
+            
+            // Emit a custom event for real-time updates
+            const event = new CustomEvent('recordingCompleted', {
+              detail: {
+                recordingId: result.recordingId,
+                filename: result.filename,
+                size: result.size,
+                duration: result.duration
+              }
+            });
+            window.dispatchEvent(event);
+            
+            // If we're on the recordings page, refresh it as fallback
             if (pathname === '/recordings') {
               router.refresh();
             }
