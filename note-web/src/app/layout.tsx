@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navigation from '@/components/Navigation';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import CliChecker from '@/components/CliChecker';
 
@@ -32,7 +31,6 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <CliChecker>
-            <Navigation />
             {children}
           </CliChecker>
         </ThemeProvider>

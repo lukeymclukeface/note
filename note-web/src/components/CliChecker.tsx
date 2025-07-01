@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 interface CliStatus {
@@ -15,17 +15,7 @@ export default function CliChecker({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    // Don't check if we're already on the CLI setup page
-    if (pathname === '/cli-setup') {
-      setCliStatus({ checking: false, available: true });
-      return;
-    }
-    
-    checkCliAvailability();
-  }, [pathname]);
-
-  const checkCliAvailability = async () => {
+  const checkCliAvailability = useCallback(async () => {
     try {
       const response = await fetch('/api/cli-check');
       const data = await response.json();
@@ -68,7 +58,17 @@ export default function CliChecker({ children }: { children: React.ReactNode }) 
         router.push('/cli-setup');
       }
     }
-  };
+  }, [pathname, router]);
+
+  useEffect(() => {
+    // Don't check if we're already on the CLI setup page
+    if (pathname === '/cli-setup') {
+      setCliStatus({ checking: false, available: true });
+      return;
+    }
+    
+    checkCliAvailability();
+  }, [pathname, checkCliAvailability]);
 
   // Show loading state while checking
   if (cliStatus.checking) {

@@ -74,7 +74,7 @@ export default function CliSetupPage() {
                     Option 2: Add to PATH
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                    If you've already built the CLI, make sure it's in your PATH:
+                    If you&apos;ve already built the CLI, make sure it&apos;s in your PATH:
                   </p>
                   <div className="bg-gray-800 dark:bg-gray-700 rounded-md p-3 font-mono text-sm text-green-400 overflow-x-auto">
                     <div>export PATH=$PATH:/path/to/note-cli</div>

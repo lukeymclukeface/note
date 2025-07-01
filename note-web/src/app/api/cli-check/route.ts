@@ -7,7 +7,7 @@ const execAsync = promisify(exec);
 export async function GET() {
   try {
     // Try to run 'note --version' to check if CLI is available
-    const { stdout, stderr } = await execAsync('note --version', { 
+    const { stdout } = await execAsync('note --version', { 
       timeout: 5000,
       env: { ...process.env, PATH: process.env.PATH }
     });
@@ -19,12 +19,13 @@ export async function GET() {
       version: stdout.trim(),
       message: 'Note CLI is available'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Check if it's a "command not found" error vs other errors
-    const isNotFound = error.code === 127 || 
-                       error.message?.includes('command not found') ||
-                       error.message?.includes('not found') ||
-                       error.stderr?.includes('command not found');
+    const errorObj = error as { code?: number; message?: string; stderr?: string };
+    const isNotFound = errorObj.code === 127 || 
+                       errorObj.message?.includes('command not found') ||
+                       errorObj.message?.includes('not found') ||
+                       errorObj.stderr?.includes('command not found');
     
     if (isNotFound) {
       return NextResponse.json({ 
@@ -38,7 +39,7 @@ export async function GET() {
     return NextResponse.json({ 
       success: true, 
       available: true, // Assume it's installed but having issues
-      error: error.message,
+      error: errorObj.message,
       message: 'Note CLI appears to be installed but encountered an error'
     });
   }

@@ -1,8 +1,34 @@
-import { getAllRecordings } from '@/lib/database';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { loadRecordings } from '@/lib/actions/recordings';
 import { formatTime, formatDuration } from '@/lib/dateUtils';
+import AudioRecorder from '@/components/AudioRecorder';
+import type { Recording } from '@/lib/database';
 
 export default function RecordingsPage() {
-  const recordings = getAllRecordings();
+  const [recordings, setRecordings] = useState<Recording[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchRecordings = async () => {
+    try {
+      const data = await loadRecordings();
+      setRecordings(data);
+    } catch (error) {
+      console.error('Error loading recordings:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecordings();
+  }, []);
+
+  const handleRecordingComplete = () => {
+    // Refresh the recordings list after a successful recording
+    fetchRecordings();
+  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -36,7 +62,13 @@ export default function RecordingsPage() {
           </p>
         </header>
 
-        {recordings.length === 0 ? (
+        <AudioRecorder onRecordingComplete={handleRecordingComplete} />
+
+        {isLoading ? (
+          <div className="text-center py-4">
+            <span className="text-gray-500 dark:text-gray-400">Loading recordings...</span>
+          </div>
+        ) : recordings.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
             <div className="text-gray-400 dark:text-gray-500 mb-4">
               <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">

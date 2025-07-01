@@ -199,7 +199,7 @@ export default function GeneralSettingsPage() {
         <div className="text-6xl mb-4">🚀</div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Welcome to Note AI</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
-          Let's get you set up! The CLI configuration file doesn't exist yet.
+          Let&apos;s get you set up! The CLI configuration file doesn&apos;t exist yet.
         </p>
         
         <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-left">
