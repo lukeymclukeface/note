@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect } from 'react';
 import { ThemeSelector } from './ThemeSelector';
+import NavbarRecorder from './NavbarRecorder';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: '🏠' },
@@ -117,7 +118,7 @@ export default function Navigation() {
           
           {/* Right side: Secondary Navigation + Mobile Menu */}
           <div className="flex items-center">
-            {/* Secondary Navigation - Desktop */}
+{/* Secondary Navigation - Desktop */}
             <div className="hidden sm:flex sm:space-x-8">
               {secondaryNavigation.map((item) => (
                 <Link
@@ -137,6 +138,7 @@ export default function Navigation() {
               <div className="flex items-center">
                 <ThemeSelector />
               </div>
+              <NavbarRecorder />
             </div>
             
             {/* Mobile menu button and theme selector */}

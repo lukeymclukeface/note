@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { loadRecordings } from '@/lib/actions/recordings';
 import { formatTime, formatDuration } from '@/lib/dateUtils';
-import AudioRecorder from '@/components/AudioRecorder';
 import type { Recording } from '@/lib/database';
 
 export default function RecordingsPage() {
@@ -24,11 +23,6 @@ export default function RecordingsPage() {
   useEffect(() => {
     fetchRecordings();
   }, []);
-
-  const handleRecordingComplete = () => {
-    // Refresh the recordings list after a successful recording
-    fetchRecordings();
-  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -56,13 +50,11 @@ export default function RecordingsPage() {
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Audio Recordings</h1>
           <p className="text-gray-600 dark:text-gray-300">
             {recordings.length === 0 
-              ? 'No recordings found. Start recording audio using the CLI.' 
+              ? 'No recordings found. Use the record button in the navigation bar to start recording.' 
               : `${recordings.length} recording${recordings.length !== 1 ? 's' : ''} found`
             }
           </p>
         </header>
-
-        <AudioRecorder onRecordingComplete={handleRecordingComplete} />
 
         {isLoading ? (
           <div className="text-center py-4">
@@ -77,11 +69,8 @@ export default function RecordingsPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No recordings yet</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              Get started by recording your first audio session:
+              Get started by clicking the record button in the navigation bar.
             </p>
-            <code className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded font-mono text-sm">
-              note record
-            </code>
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">

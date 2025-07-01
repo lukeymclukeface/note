@@ -349,6 +349,50 @@ export function getRecentRecordings(limit: number = 5): Recording[] {
   }
 }
 
+// Insert a new recording into the database
+export function insertRecording(recordingData: {
+  filename: string;
+  file_path: string;
+  start_time: string;
+  end_time: string;
+  duration: number;
+  file_size: number;
+  format: string;
+  sample_rate: number;
+  channels: number;
+}): number | null {
+  try {
+    const dbPath = getDatabasePath();
+    const db = new Database(dbPath, { readonly: false });
+    
+    const stmt = db.prepare(`
+      INSERT INTO recordings (
+        filename, file_path, start_time, end_time, duration,
+        file_size, format, sample_rate, channels, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    const result = stmt.run(
+      recordingData.filename,
+      recordingData.file_path,
+      recordingData.start_time,
+      recordingData.end_time,
+      recordingData.duration,
+      recordingData.file_size,
+      recordingData.format,
+      recordingData.sample_rate,
+      recordingData.channels,
+      new Date().toISOString()
+    );
+    
+    db.close();
+    return result.lastInsertRowid as number;
+  } catch (error) {
+    console.error('Error inserting recording:', error);
+    return null;
+  }
+}
+
 // Get summary statistics
 export function getDashboardStats() {
   try {
