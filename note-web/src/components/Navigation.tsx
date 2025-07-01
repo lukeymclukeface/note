@@ -90,7 +90,7 @@ export default function Navigation() {
                 </button>
                 
                 {isImportDropdownOpen && (
-                  <div className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                  <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
                     <div className="py-1">
                       {importNavigation.map((item) => (
                         <Link
@@ -112,7 +112,7 @@ export default function Navigation() {
                   </div>
                 )}
               </div>
-          </div>
+            </div>
           
           {/* Secondary Navigation */}
           <div className="hidden sm:ml-6 sm:flex sm:space-x-8 sm:items-center">
