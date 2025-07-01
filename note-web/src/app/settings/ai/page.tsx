@@ -12,6 +12,19 @@ interface OpenAIValidationResult {
   };
 }
 
+interface GoogleAIValidationResult {
+  valid: boolean;
+  error?: string;
+  needsAuth?: boolean;
+  details?: {
+    projectId?: string;
+    account?: string;
+    location?: string;
+    gcloudVersion?: string;
+    services?: string[];
+  };
+}
+
 export default function AISettingsPage() {
   const [config, setConfig] = useState<Config | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -20,6 +33,8 @@ export default function AISettingsPage() {
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [isValidatingOpenAI, setIsValidatingOpenAI] = useState(false);
   const [openAIValidation, setOpenAIValidation] = useState<OpenAIValidationResult | null>(null);
+  const [isValidatingGoogleAI, setIsValidatingGoogleAI] = useState(false);
+  const [googleAIValidation, setGoogleAIValidation] = useState<GoogleAIValidationResult | null>(null);
 
   useEffect(() => {
     loadConfig();
@@ -140,6 +155,56 @@ export default function AISettingsPage() {
       setMessage({type: 'error', text: 'Failed to validate API key'});
     } finally {
       setIsValidatingOpenAI(false);
+    }
+  };
+
+  const validateGoogleAI = async () => {
+    if (!formData.google_project_id) {
+      setMessage({type: 'error', text: 'No Google Project ID to validate'});
+      return;
+    }
+
+    setIsValidatingGoogleAI(true);
+    setMessage(null);
+    setGoogleAIValidation(null);
+    
+    try {
+      const response = await fetch('/api/validate-google-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          projectId: formData.google_project_id,
+          location: formData.google_location 
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        setMessage({type: 'error', text: `Validation failed: ${response.status} - ${text.substring(0, 100)}`});
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        setGoogleAIValidation(result.validation);
+        if (result.validation.valid) {
+          setMessage({type: 'success', text: 'Google AI configuration is valid and working!'});
+        } else if (result.validation.needsAuth) {
+          setMessage({type: 'error', text: `Google AI validation failed: ${result.validation.error}. Please run "gcloud auth login" in your terminal.`});
+        } else {
+          setMessage({type: 'error', text: `Google AI validation failed: ${result.validation.error}`});
+        }
+      } else {
+        setMessage({type: 'error', text: result.error || 'Failed to validate Google AI configuration'});
+      }
+    } catch (error) {
+      console.error('Failed to validate Google AI:', error);
+      setMessage({type: 'error', text: 'Failed to validate Google AI configuration'});
+    } finally {
+      setIsValidatingGoogleAI(false);
     }
   };
 
@@ -301,6 +366,101 @@ export default function AISettingsPage() {
                   ))}
                 </select>
               </div>
+              
+              {/* Google AI Validation */}
+              {formData.google_project_id && (
+                <div className="md:col-span-2 mt-4">
+                  <button
+                    type="button"
+                    onClick={validateGoogleAI}
+                    disabled={isValidatingGoogleAI}
+                    className="btn btn-sm btn-outline"
+                  >
+                    {isValidatingGoogleAI ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Validating...
+                      </span>
+                    ) : (
+                      '🔍 Validate Google AI'
+                    )}
+                  </button>
+                  
+                  {/* Google AI Validation Results */}
+                  {googleAIValidation && (
+                    <div className={`mt-3 p-3 rounded-md border ${
+                      googleAIValidation.valid 
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                        : googleAIValidation.needsAuth
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                    }`}>
+                      <div className="flex items-center mb-2">
+                        <div className={`w-3 h-3 rounded-full mr-2 ${
+                          googleAIValidation.valid 
+                            ? 'bg-green-500' 
+                            : googleAIValidation.needsAuth 
+                            ? 'bg-yellow-500' 
+                            : 'bg-red-500'
+                        }`}></div>
+                        <span className={`text-sm font-medium ${
+                          googleAIValidation.valid 
+                            ? 'text-green-800 dark:text-green-200'
+                            : googleAIValidation.needsAuth
+                            ? 'text-yellow-800 dark:text-yellow-200'
+                            : 'text-red-800 dark:text-red-200'
+                        }`}>
+                          {googleAIValidation.valid 
+                            ? 'Google AI Valid' 
+                            : googleAIValidation.needsAuth 
+                            ? 'Authentication Required'
+                            : 'Google AI Invalid'}
+                        </span>
+                      </div>
+                      
+                      {googleAIValidation.valid && googleAIValidation.details && (
+                        <div className="text-xs space-y-1">
+                          {googleAIValidation.details.account && (
+                            <p className="text-green-700 dark:text-green-300">
+                              <span className="font-medium">Account:</span> {googleAIValidation.details.account}
+                            </p>
+                          )}
+                          {googleAIValidation.details.gcloudVersion && (
+                            <p className="text-green-700 dark:text-green-300">
+                              <span className="font-medium">gcloud CLI:</span> {googleAIValidation.details.gcloudVersion}
+                            </p>
+                          )}
+                          {googleAIValidation.details.services && googleAIValidation.details.services.length > 0 && (
+                            <p className="text-green-700 dark:text-green-300">
+                              <span className="font-medium">Enabled APIs:</span> {googleAIValidation.details.services.join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {googleAIValidation.needsAuth && (
+                        <div className="text-xs space-y-2">
+                          <p className="text-yellow-700 dark:text-yellow-300">
+                            <span className="font-medium">Action Required:</span> Run the following command in your terminal:
+                          </p>
+                          <code className="block bg-yellow-100 dark:bg-yellow-800/30 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded text-xs font-mono">
+                            gcloud auth login
+                          </code>
+                        </div>
+                      )}
+                      
+                      {!googleAIValidation.valid && !googleAIValidation.needsAuth && googleAIValidation.error && (
+                        <p className="text-xs text-red-700 dark:text-red-300">
+                          <span className="font-medium">Error:</span> {googleAIValidation.error}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </section>
