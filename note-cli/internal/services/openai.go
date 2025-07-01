@@ -256,8 +256,8 @@ type OpenAIModelsResponse struct {
 	Data   []OpenAIModel `json:"data"`
 }
 
-// GetAvailableModels fetches available models from OpenAI API
-func (s *OpenAIService) GetAvailableModels() ([]OpenAIModel, error) {
+// GetOpenAIModels fetches available models from OpenAI API
+func (s *OpenAIService) GetOpenAIModels() ([]OpenAIModel, error) {
 	url := "https://api.openai.com/v1/models"
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -527,4 +527,35 @@ func (s *OpenAIService) SummarizeByContentType(text string, contentType string) 
 	}
 
 	return strings.TrimSpace(content), nil
+}
+
+// GetProviderName returns the name of the provider
+func (s *OpenAIService) GetProviderName() string {
+	return "openai"
+}
+
+// GetAvailableModels returns available models as generic Model interface
+func (s *OpenAIService) GetAvailableModels() ([]Model, error) {
+	openaiModels, err := s.GetOpenAIModels()
+	if err != nil {
+		return nil, err
+	}
+	
+	var models []Model
+	for _, openaiModel := range openaiModels {
+		modelType := "chat"
+		if strings.Contains(openaiModel.ID, "whisper") || strings.Contains(openaiModel.ID, "transcribe") {
+			modelType = "transcription"
+		}
+		
+		models = append(models, Model{
+			ID:          openaiModel.ID,
+			Name:        openaiModel.ID,
+			Description: fmt.Sprintf("OpenAI %s model", openaiModel.ID),
+			Provider:    "openai",
+			Type:        modelType,
+		})
+	}
+	
+	return models, nil
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"note-cli/internal/config"
 	"note-cli/internal/database"
 	"note-cli/internal/helpers"
 	"note-cli/internal/services"
@@ -52,6 +53,28 @@ func importFile(cmd *cobra.Command, args []string) error {
 		verboseLogger.EndCommand("import", time.Since(start), successful)
 	}()
 
+
+	// Initialize provider factory
+	factory := services.NewProviderFactory(verboseLogger)
+
+	// Load config to get providers
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Section for selecting transcription provider
+	transcriptionProvider, err := factory.CreateTranscriptionProvider(cfg.TranscriptionProvider)
+	if err != nil {
+		return fmt.Errorf("failed to create transcription provider: %w", err)
+	}
+
+	// Section for selecting summary provider
+	summaryProvider, err := factory.CreateSummaryProvider(cfg.SummaryProvider)
+	if err != nil {
+		return fmt.Errorf("failed to create summary provider: %w", err)
+	}
+
 	audioService := services.NewAudioService()
 	fileService := services.NewFileService()
 	uiService := services.NewUIService()
@@ -99,14 +122,14 @@ func importFile(cmd *cobra.Command, args []string) error {
 	verboseLogger.Step("Determining file type", fmt.Sprintf("Extension: %s", filepath.Ext(filePath)))
 	if audioService.IsValidTextFile(filePath) {
 		verboseLogger.Debug("Processing as text file")
-		err := processTextFile(filePath, uiService, fileService, verboseLogger)
+		err := processTextFile(filePath, uiService, fileService, verboseLogger, summaryProvider)
 		if err != nil {
 			successful = false
 		}
 		return err
 	} else if audioService.IsValidAudioFile(filePath) {
 		verboseLogger.Debug("Processing as audio file")
-		err := processAudioFile(filePath, audioService, fileService, uiService, verboseLogger)
+		err := processAudioFile(filePath, audioService, fileService, uiService, verboseLogger, transcriptionProvider, summaryProvider)
 		if err != nil {
 			successful = false
 		}
@@ -119,7 +142,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 	}
 }
 
-func processTextFile(filePath string, uiService *services.UIService, fileService *services.FileService, verboseLogger *services.VerboseLogger) error {
+func processTextFile(filePath string, uiService *services.UIService, fileService *services.FileService, verboseLogger *services.VerboseLogger, summaryProvider services.AIProvider) error {
 	// Load config and validate
 	cfg, db, err := helpers.LoadConfigAndDatabase()
 	if err != nil {
@@ -141,15 +164,9 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 
 	// Initialize OpenAI service
 	verboseLogger.Step("Initializing OpenAI service", "")
-	openaiService, err := services.NewOpenAIService(verboseLogger)
-	if err != nil {
-		verboseLogger.Error(err, "Failed to initialize OpenAI service")
-		return err
-	}
-
-	// Analyze content type and generate title
+// Analyze content type and generate title
 	analysis, err := uiService.RunTaskWithSpinner("🔍 Analyzing content type and generating title", func() (interface{}, error) {
-		return openaiService.AnalyzeContentAndGenerateTitle(text)
+		return summaryProvider.AnalyzeContentAndGenerateTitle(text)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to analyze content: %w", err)
@@ -161,7 +178,7 @@ func processTextFile(filePath string, uiService *services.UIService, fileService
 
 	// Create specialized summary based on content type
 	summaryResult, err := uiService.RunTaskWithSpinner(fmt.Sprintf("📝 Creating %s summary using OpenAI", contentAnalysis.ContentType), func() (interface{}, error) {
-		return openaiService.SummarizeByContentType(text, contentAnalysis.ContentType)
+return summaryProvider.SummarizeByContentType(text, contentAnalysis.ContentType)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to summarize text: %w", err)
@@ -214,7 +231,7 @@ if err := fileService.SaveMarkdownFiles("", summaryStr, transcriptionPath, summa
 	return nil
 }
 
-func processAudioFile(filePath string, audioService *services.AudioService, fileService *services.FileService, uiService *services.UIService, verboseLogger *services.VerboseLogger) error {
+func processAudioFile(filePath string, audioService *services.AudioService, fileService *services.FileService, uiService *services.UIService, verboseLogger *services.VerboseLogger, transcriptionProvider services.AIProvider, summaryProvider services.AIProvider) error {
 	fmt.Println("🎵 Processing audio file...")
 
 	// Check dependencies
@@ -296,15 +313,9 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 
 	// Initialize OpenAI service
 	verboseLogger.Step("Initializing OpenAI service", "")
-	openaiService, err := services.NewOpenAIService(verboseLogger)
-	if err != nil {
-		verboseLogger.Error(err, "Failed to initialize OpenAI service")
-		return err
-	}
-
-	// Transcribe using chunked approach for longer files
-	transcriptResult, err := uiService.RunTaskWithSpinner("📝 Transcribing audio using OpenAI", func() (interface{}, error) {
-		return audioService.TranscribeFileChunked(newFilePath, destinationDir, openaiService)
+// Transcribe using chunked approach for longer files
+	transcriptResult, err := uiService.RunTaskWithSpinner("📝 Transcribing audio", func() (interface{}, error) {
+	return audioService.TranscribeFileChunked(newFilePath, destinationDir, transcriptionProvider)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to transcribe file: %w", err)
@@ -314,7 +325,7 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 
 	// Analyze content type and generate title
 	analysis, err := uiService.RunTaskWithSpinner("🔍 Analyzing content type and generating title", func() (interface{}, error) {
-		return openaiService.AnalyzeContentAndGenerateTitle(transcript)
+		return summaryProvider.AnalyzeContentAndGenerateTitle(transcript)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to analyze content: %w", err)
@@ -326,7 +337,7 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 
 	// Create specialized summary based on content type
 	summaryResult, err := uiService.RunTaskWithSpinner(fmt.Sprintf("📄 Creating %s summary from transcription", contentAnalysis.ContentType), func() (interface{}, error) {
-		return openaiService.SummarizeByContentType(transcript, contentAnalysis.ContentType)
+return summaryProvider.SummarizeByContentType(transcript, contentAnalysis.ContentType)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to summarize transcription: %w", err)

@@ -9,28 +9,38 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	NotesDir           string   `json:"notes_dir"`
-	Editor             string   `json:"editor"`
-	DateFormat         string   `json:"date_format"`
-	DefaultTags        []string `json:"default_tags"`
-	OpenAIKey          string   `json:"openai_key"`
-	DatabasePath       string   `json:"database_path"`
-	TranscriptionModel string   `json:"transcription_model"`
-	SummaryModel       string   `json:"summary_model"`
+	NotesDir               string   `json:"notes_dir"`
+	Editor                 string   `json:"editor"`
+	DateFormat             string   `json:"date_format"`
+	DefaultTags            []string `json:"default_tags"`
+	OpenAIKey              string   `json:"openai_key"`
+	DatabasePath           string   `json:"database_path"`
+	TranscriptionModel     string   `json:"transcription_model"`
+	SummaryModel           string   `json:"summary_model"`
+	// Provider configuration
+	TranscriptionProvider  string   `json:"transcription_provider"`
+	SummaryProvider        string   `json:"summary_provider"`
+	// Google AI configuration
+	GoogleProjectID        string   `json:"google_project_id"`
+	GoogleLocation         string   `json:"google_location"`
 }
 
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
 	notesDir, _ := constants.GetNotesDir()
 	return &Config{
-		NotesDir:           notesDir,
-		Editor:             "nano",
-		DateFormat:         "2006-01-02",
-		DefaultTags:        []string{},
-		OpenAIKey:          "",
-		DatabasePath:       "",
-		TranscriptionModel: "whisper-1",
-		SummaryModel:       "gpt-3.5-turbo",
+		NotesDir:              notesDir,
+		Editor:                "nano",
+		DateFormat:            "2006-01-02",
+		DefaultTags:           []string{},
+		OpenAIKey:             "",
+		DatabasePath:          "",
+		TranscriptionModel:    "whisper-1",
+		SummaryModel:          "gpt-3.5-turbo",
+		TranscriptionProvider: "openai",
+		SummaryProvider:       "openai",
+		GoogleProjectID:       "",
+		GoogleLocation:        "us-central1",
 	}
 }
 
@@ -77,6 +87,15 @@ func Load() (*Config, error) {
 	}
 	if config.SummaryModel == "" {
 		config.SummaryModel = "gpt-3.5-turbo"
+	}
+	if config.TranscriptionProvider == "" {
+		config.TranscriptionProvider = "openai"
+	}
+	if config.SummaryProvider == "" {
+		config.SummaryProvider = "openai"
+	}
+	if config.GoogleLocation == "" {
+		config.GoogleLocation = "us-central1"
 	}
 	
 	return &config, nil

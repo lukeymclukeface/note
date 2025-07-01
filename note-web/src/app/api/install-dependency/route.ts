@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     // First check if brew is available
     try {
       await execAsync('brew --version');
-    } catch (error) {
+    } catch {
       return NextResponse.json({
         success: false,
         error: 'Homebrew is not installed or not available'
@@ -34,43 +34,54 @@ export async function POST(request: Request) {
     const packageName = BREW_PACKAGES[dependency];
     console.log(`Installing ${dependency} using brew install ${packageName}`);
 
-    // Install the package
-    const { stdout, stderr } = await execAsync(`brew install ${packageName}`, {
-      timeout: 300000 // 5 minute timeout
-    });
+    try {
+      // Install the package
+      const { stdout, stderr } = await execAsync(`brew install ${packageName}`, {
+        timeout: 300000 // 5 minute timeout
+      });
 
-    console.log('Install stdout:', stdout);
-    console.log('Install stderr:', stderr);
+      console.log('Install stdout:', stdout);
+      console.log('Install stderr:', stderr);
 
-    return NextResponse.json({
-      success: true,
-      message: `Successfully installed ${dependency}`,
-      output: stdout || stderr
-    });
-
-  } catch (error: any) {
-    console.error('Installation failed:', error);
-    
-    // Check if it's a timeout
-    if (error.signal === 'SIGTERM') {
-      return NextResponse.json({
-        success: false,
-        error: 'Installation timed out (took longer than 5 minutes)'
-      }, { status: 408 });
-    }
-
-    // Check if package is already installed
-    if (error.message?.includes('already installed')) {
       return NextResponse.json({
         success: true,
-        message: `${dependency} is already installed`,
-        output: error.message
+        message: `Successfully installed ${dependency}`,
+        output: stdout || stderr
       });
+      
+    } catch (installError: unknown) {
+      console.error('Installation failed:', installError);
+      
+      const err = installError as { signal?: string; message?: string };
+      
+      // Check if it's a timeout
+      if (err.signal === 'SIGTERM') {
+        return NextResponse.json({
+          success: false,
+          error: 'Installation timed out (took longer than 5 minutes)'
+        }, { status: 408 });
+      }
+
+      // Check if package is already installed
+      if (err.message?.includes('already installed')) {
+        return NextResponse.json({
+          success: true,
+          message: `${dependency} is already installed`,
+          output: err.message
+        });
+      }
+
+      return NextResponse.json({
+        success: false,
+        error: err.message || 'Installation failed'
+      }, { status: 500 });
     }
 
+  } catch (error: unknown) {
+    console.error('Request parsing failed:', error);
     return NextResponse.json({
       success: false,
-      error: error.message || 'Installation failed'
-    }, { status: 500 });
+      error: 'Invalid request'
+    }, { status: 400 });
   }
 }

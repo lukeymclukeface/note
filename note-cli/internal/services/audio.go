@@ -103,7 +103,7 @@ type ChunkedTranscriptionResult struct {
 }
 
 // TranscribeFileChunked transcribes a large audio file in chunks
-func (s *AudioService) TranscribeFileChunked(filePath, destinationDir string, openaiService *OpenAIService) (*ChunkedTranscriptionResult, error) {
+func (s *AudioService) TranscribeFileChunked(filePath, destinationDir string, provider AIProvider) (*ChunkedTranscriptionResult, error) {
 	// Define the chunk duration (e.g., 10 minutes)
 	chunkDuration := 10 * 60 // 10 minutes in seconds
 
@@ -115,7 +115,7 @@ func (s *AudioService) TranscribeFileChunked(filePath, destinationDir string, op
 
 	// If file is shorter than chunk duration, transcribe normally
 	if duration <= chunkDuration {
-		transcript, err := openaiService.TranscribeAudioFile(filePath)
+		transcript, err := provider.TranscribeAudioFile(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +151,7 @@ func (s *AudioService) TranscribeFileChunked(filePath, destinationDir string, op
 			return nil, fmt.Errorf("failed to split audio: %w", err)
 		}
 
-		chunkTranscript, err := openaiService.TranscribeAudioFile(chunkFilePath)
+		chunkTranscript, err := provider.TranscribeAudioFile(chunkFilePath)
 		os.Remove(chunkFilePath) // Clean up the chunk file
 
 		if err != nil {

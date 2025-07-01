@@ -74,6 +74,25 @@ export function configExists(): boolean {
   }
 }
 
+// Save configuration to file
+export function saveConfig(config: AppConfig): void {
+  try {
+    const configPath = getConfigPath();
+    const configDir = path.dirname(configPath);
+    
+    // Create config directory if it doesn't exist
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+    
+    // Write config to file
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  } catch (error) {
+    console.error('Error saving config:', error);
+    throw error;
+  }
+}
+
 // Mask the OpenAI API key for security display
 export function maskApiKey(key: string): string {
   if (!key) return '(not set)';
@@ -84,3 +103,12 @@ export function maskApiKey(key: string): string {
     return '*'.repeat(key.length);
   }
 }
+
+// Service object for easier importing
+export const configService = {
+  getConfig: loadConfig,
+  saveConfig,
+  getConfigPath,
+  configExists,
+  maskApiKey
+};

@@ -128,8 +128,16 @@ func showConfig() {
 	}
 	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "OpenAI Key:")), green(keyDisplay))
 
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Transcription Provider:")), green(cfg.TranscriptionProvider))
 	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Transcription Model:")), green(cfg.TranscriptionModel))
+	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Summary Provider:")), green(cfg.SummaryProvider))
 	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Summary Model:")), green(cfg.SummaryModel))
+
+	// Google AI configuration (if applicable)
+	if cfg.TranscriptionProvider == "google" || cfg.SummaryProvider == "google" {
+		fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Google Project ID:")), green(cfg.GoogleProjectID))
+		fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Google Location:")), green(cfg.GoogleLocation))
+	}
 
 	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Notes Directory:")), green(cfg.NotesDir))
 	fmt.Printf("%s %s\n", cyan(fmt.Sprintf("%-*s", fieldWidth, "Database Path:")), green(cfg.DatabasePath))
@@ -160,9 +168,25 @@ func setConfig(key, value string) {
 		cfg.DefaultTags = tags
 	case "openai_key":
 		cfg.OpenAIKey = value
+	case "transcription_provider":
+		if value != "openai" && value != "google" {
+			fmt.Printf("Invalid transcription provider: %s. Must be 'openai' or 'google'\n", value)
+			return
+		}
+		cfg.TranscriptionProvider = value
+	case "summary_provider":
+		if value != "openai" && value != "google" {
+			fmt.Printf("Invalid summary provider: %s. Must be 'openai' or 'google'\n", value)
+			return
+		}
+		cfg.SummaryProvider = value
+	case "google_project_id":
+		cfg.GoogleProjectID = value
+	case "google_location":
+		cfg.GoogleLocation = value
 	default:
 		fmt.Printf("Unknown configuration key: %s\n", key)
-		fmt.Println("Available keys: notes_dir, editor, date_format, default_tags, openai_key")
+		fmt.Println("Available keys: notes_dir, editor, date_format, default_tags, openai_key, transcription_provider, summary_provider, google_project_id, google_location")
 		return
 	}
 
@@ -205,7 +229,7 @@ func configureModels() error {
 		return err
 	}
 
-	models, err := openaiService.GetAvailableModels()
+	models, err := openaiService.GetOpenAIModels()
 	if err != nil {
 		return fmt.Errorf("failed to fetch models: %w", err)
 	}

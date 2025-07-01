@@ -1,48 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// Client-side function to mask API keys
-const maskApiKey = (key: string | undefined): string => {
-  if (!key) return '(not set)';
-  if (key.length <= 8) return '***';
-  return key.substring(0, 4) + '***' + key.substring(key.length - 4);
-};
+import { Config, HealthCheck, COMMON_EDITORS, DATE_FORMATS } from './types';
 
-type Config = {
-  editor?: string;
-  date_format?: string;
-  default_tags?: string[];
-  notes_dir?: string;
-  database_path?: string;
-  // OpenAI Configuration
-  openai_key?: string;
-  // Google AI Configuration
-  google_project_id?: string;
-  google_location?: string;
-  // Model/Provider Configuration
-  transcription_provider?: string;
-  transcription_model?: string;
-  summary_provider?: string;
-  summary_model?: string;
-};
-
-interface HealthCheck {
-  name: string;
-  status: 'ok' | 'missing' | 'error';
-  version?: string;
-  error?: string;
-}
-
-const AI_PROVIDERS = ['openai', 'google'];
-const OPENAI_TRANSCRIPTION_MODELS = ['whisper-1'];
-const OPENAI_SUMMARY_MODELS = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini'];
-const GOOGLE_TRANSCRIPTION_MODELS = ['chirp', 'chirp_2', 'gpt-4o-transcribe'];
-const GOOGLE_SUMMARY_MODELS = ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.0-pro'];
-const GOOGLE_LOCATIONS = ['us-central1', 'us-east1', 'us-west1', 'europe-west1', 'asia-southeast1'];
-const COMMON_EDITORS = ['nano', 'vim', 'emacs', 'code', 'subl'];
-const DATE_FORMATS = ['2006-01-02', '01/02/2006', '02-01-2006', 'Jan 2, 2006'];
-
-export default function SettingsPage() {
+export default function GeneralSettingsPage() {
   const [config, setConfig] = useState<Config | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Config>({});
@@ -202,40 +163,28 @@ export default function SettingsPage() {
     setMessage(null);
   };
 
-  const getTranscriptionModels = () => {
-    return formData.transcription_provider === 'google' ? GOOGLE_TRANSCRIPTION_MODELS : OPENAI_TRANSCRIPTION_MODELS;
-  };
-
-  const getSummaryModels = () => {
-    return formData.summary_provider === 'google' ? GOOGLE_SUMMARY_MODELS : OPENAI_SUMMARY_MODELS;
-  };
 
   if (!config) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-4xl mx-auto p-6">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">❌</div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Configuration Error</h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-8">
-              Unable to read the configuration file. Please check if the CLI is set up.
-            </p>
-          </div>
-        </div>
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">❌</div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Configuration Error</h1>
+        <p className="text-gray-600 dark:text-gray-300 mb-8">
+          Unable to read the configuration file. Please check if the CLI is set up.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Settings</h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Application configuration loaded from the CLI config file.
-          </p>
-        </div>
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">General Settings</h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          Application configuration loaded from the CLI config file.
+        </p>
+      </div>
 
         {message && (
           <div className={`alert mt-4 mb-6 ${message.type === 'success' ? 'alert-success' : 'alert-error'}`}>
@@ -335,135 +284,6 @@ export default function SettingsPage() {
             </div>
           </section>
 
-{/* OpenAI Configuration */}
-          <section>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">OpenAI Configuration</h2>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">OpenAI API Key</label>
-                  <input
-                    type={isEditing ? "text" : "password"}
-                    value={isEditing ? (formData.openai_key || '') : maskApiKey(formData.openai_key)}
-                    onChange={(e) => handleInputChange('openai_key', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                    disabled={!isEditing}
-                    placeholder={isEditing ? "Enter your OpenAI API key" : ""}
-                  />
-                  {!formData.openai_key && (
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">⚠️ API key not configured</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Google AI Configuration */}
-          {(formData.transcription_provider === 'google' || formData.summary_provider === 'google') && (
-            <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Google AI Configuration</h2>
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Google Project ID</label>
-                    <input
-                      type="text"
-                      value={formData.google_project_id || ''}
-                      onChange={(e) => handleInputChange('google_project_id', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                      disabled={!isEditing}
-                      placeholder="your-google-project-id"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Google Location</label>
-                    <select
-                      value={formData.google_location || ''}
-                      onChange={(e) => handleInputChange('google_location', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                      disabled={!isEditing}
-                    >
-                      {GOOGLE_LOCATIONS.map((location) => (
-                        <option key={location} value={location}>
-                          {location}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-          
-          {/* Model/Provider Configuration */}
-          <section>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Model/Provider Configuration</h2>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Transcription Provider</label>
-                  <select
-                    value={formData.transcription_provider || ''}
-                    onChange={(e) => handleInputChange('transcription_provider', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                    disabled={!isEditing}
-                  >
-                    {AI_PROVIDERS.map((provider) => (
-                      <option key={provider} value={provider}>
-                        {provider}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Transcription Model</label>
-                  <select
-                    value={formData.transcription_model || ''}
-                    onChange={(e) => handleInputChange('transcription_model', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                    disabled={!isEditing}
-                  >
-                    {getTranscriptionModels().map((model) => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Summary Provider</label>
-                  <select
-                    value={formData.summary_provider || ''}
-                    onChange={(e) => handleInputChange('summary_provider', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                    disabled={!isEditing}
-                  >
-                    {AI_PROVIDERS.map((provider) => (
-                      <option key={provider} value={provider}>
-                        {provider}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Summary Model</label>
-                  <select
-                    value={formData.summary_model || ''}
-                    onChange={(e) => handleInputChange('summary_model', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
-                    disabled={!isEditing}
-                  >
-                    {getSummaryModels().map((model) => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </section>
-
           {/* File Paths */}
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">File Paths</h2>
@@ -510,12 +330,6 @@ export default function SettingsPage() {
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Configuration</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-3 ${formData.openai_key ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-sm text-gray-800 dark:text-gray-200">
-                    OpenAI API Key {formData.openai_key ? 'Configured' : 'Missing'}
-                  </span>
-                </div>
                 <div className="flex items-center">
                   <div className={`w-3 h-3 rounded-full mr-3 ${formData.database_path ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   <span className="text-sm text-gray-800 dark:text-gray-200">
@@ -643,7 +457,7 @@ export default function SettingsPage() {
                       check.status === 'missing' && canInstallDependency(check.name)
                     ) ? (
                       <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
-                        Click the "Install" button next to missing dependencies to install them using Homebrew.
+                        Click the &quot;Install&quot; button next to missing dependencies to install them using Homebrew.
                       </p>
                     ) : null}
                   </div>
@@ -669,7 +483,6 @@ export default function SettingsPage() {
             )}
           </div>
         </form>
-      </div>
     </div>
   );
 }

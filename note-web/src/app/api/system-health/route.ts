@@ -25,11 +25,13 @@ async function checkCommand(commandName: string, versionCommand: string, name: s
       status: 'ok',
       version: output
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { code?: number; message?: string };
+    
     // Check if it's a "command not found" error from 'which' or the version command
-    if (error.code === 127 || error.code === 1 || 
-        error.message.includes('command not found') || 
-        error.message.includes('not found')) {
+    if (err.code === 127 || err.code === 1 || 
+        err.message?.includes('command not found') || 
+        err.message?.includes('not found')) {
       return {
         name,
         status: 'missing'
@@ -39,7 +41,7 @@ async function checkCommand(commandName: string, versionCommand: string, name: s
     return {
       name,
       status: 'error',
-      error: error.message
+      error: err.message || 'Unknown error'
     };
   }
 }

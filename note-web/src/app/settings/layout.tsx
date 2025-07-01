@@ -1,0 +1,56 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const settingsNavItems = [
+  { label: 'General', href: '/settings', icon: '⚙️' },
+  { label: 'AI Settings', href: '/settings/ai', icon: '🤖' },
+  { label: 'Database', href: '/settings/database', icon: '🗄️' },
+  { label: 'Raw Config', href: '/settings/raw', icon: '📄' },
+];
+
+export default function SettingsLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto flex">
+        {/* Left Sidebar */}
+        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-screen">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
+            <nav className="space-y-1">
+              {settingsNavItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      isActive
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="mr-3 text-lg">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 p-6">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
