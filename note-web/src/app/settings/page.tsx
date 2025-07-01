@@ -23,6 +23,13 @@ type Config = {
   database_path?: string;
 };
 
+interface HealthCheck {
+  name: string;
+  status: 'ok' | 'missing' | 'error';
+  version?: string;
+  error?: string;
+}
+
 const AI_PROVIDERS = ['openai', 'google'];
 const OPENAI_TRANSCRIPTION_MODELS = ['whisper-1'];
 const OPENAI_SUMMARY_MODELS = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini'];
@@ -39,9 +46,12 @@ export default function SettingsPage() {
   const [tagInput, setTagInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [systemHealth, setSystemHealth] = useState<HealthCheck[]>([]);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(false);
 
   useEffect(() => {
     loadConfig();
+    loadSystemHealth();
   }, []);
 
   const loadConfig = async () => {
@@ -57,6 +67,24 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Failed to load config:', error);
       setConfig(null);
+    }
+  };
+
+  const loadSystemHealth = async () => {
+    setIsLoadingHealth(true);
+    try {
+      const response = await fetch('/api/system-health');
+      const data = await response.json();
+      if (data.success) {
+        setSystemHealth(data.checks);
+      } else {
+        setSystemHealth([]);
+      }
+    } catch (error) {
+      console.error('Failed to load system health:', error);
+      setSystemHealth([]);
+    } finally {
+      setIsLoadingHealth(false);
     }
   };
 
@@ -418,7 +446,8 @@ export default function SettingsPage() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">System Status</h2>
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Configuration</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="flex items-center">
                   <div className={`w-3 h-3 rounded-full mr-3 ${formData.openai_key ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   <span className="text-sm text-gray-800 dark:text-gray-200">
@@ -437,6 +466,87 @@ export default function SettingsPage() {
                     Notes Directory {formData.notes_dir ? 'Set' : 'Missing'}
                   </span>
                 </div>
+              </div>
+              
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">System Dependencies</h3>
+                  <button
+                    type="button"
+                    onClick={loadSystemHealth}
+                    className="btn btn-sm btn-outline"
+                    disabled={isLoadingHealth}
+                  >
+                    {isLoadingHealth ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Checking...
+                      </span>
+                    ) : (
+                      'Refresh'
+                    )}
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {systemHealth.length > 0 ? (
+                    systemHealth.map((check, index) => (
+                      <div key={index} className="flex items-start space-x-3">
+                        <div className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${
+                          check.status === 'ok' ? 'bg-green-500' : 
+                          check.status === 'missing' ? 'bg-red-500' : 
+                          'bg-yellow-500'
+                        }`}></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                              {check.name}
+                            </span>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              check.status === 'ok' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                              check.status === 'missing' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
+                              'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                            }`}>
+                              {check.status === 'ok' ? 'Installed' :
+                               check.status === 'missing' ? 'Missing' :
+                               'Error'}
+                            </span>
+                          </div>
+                          {check.version && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono truncate">
+                              {check.version}
+                            </p>
+                          )}
+                          {check.error && (
+                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                              {check.error}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center py-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {isLoadingHealth ? 'Checking system dependencies...' : 'Click Refresh to check system dependencies'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {systemHealth.some(check => check.status === 'missing') && (
+                  <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <strong>Missing dependencies detected:</strong> Some features may not work properly. 
+                      {systemHealth.find(check => check.name === 'Homebrew' && check.status === 'missing') && (
+                        <span> Install Homebrew first, then use it to install missing tools.</span>
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </section>
