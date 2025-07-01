@@ -42,7 +42,7 @@ export default function Navigation() {
 
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="px-4 w-full">
         <div className="flex justify-between h-16">
           <div className="flex">
             {/* Logo */}
@@ -113,44 +113,47 @@ export default function Navigation() {
                 )}
               </div>
             </div>
-          
-          {/* Secondary Navigation */}
-          <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-            {secondaryNavigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={clsx(
-                  pathname === item.href
-                    ? 'border-blue-500 text-gray-900 dark:text-white'
-                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200',
-                  'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16'
-                )}
-              >
-                <span className="mr-2">{item.icon}</span>
-                {item.name}
-              </Link>
-            ))}
-            <div className="flex items-center">
-              <ThemeSelector />
-            </div>
           </div>
-        </div>
-        
-        {/* Mobile menu button and theme selector */}
-          <div className="sm:hidden flex items-center space-x-3">
-            <ThemeSelector />
-            <button
-              type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-              aria-controls="mobile-menu"
-              aria-expanded="false"
-            >
-              <span className="sr-only">Open main menu</span>
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+          
+          {/* Right side: Secondary Navigation + Mobile Menu */}
+          <div className="flex items-center">
+            {/* Secondary Navigation - Desktop */}
+            <div className="hidden sm:flex sm:space-x-8">
+              {secondaryNavigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={clsx(
+                    pathname === item.href
+                      ? 'border-blue-500 text-gray-900 dark:text-white'
+                      : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-200',
+                    'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16'
+                  )}
+                >
+                  <span className="mr-2">{item.icon}</span>
+                  {item.name}
+                </Link>
+              ))}
+              <div className="flex items-center">
+                <ThemeSelector />
+              </div>
+            </div>
+            
+            {/* Mobile menu button and theme selector */}
+            <div className="sm:hidden flex items-center space-x-3">
+              <ThemeSelector />
+              <button
+                type="button"
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-controls="mobile-menu"
+                aria-expanded="false"
+              >
+                <span className="sr-only">Open main menu</span>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
         
