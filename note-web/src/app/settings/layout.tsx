@@ -19,7 +19,7 @@ export default function SettingsLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto flex">
+      <div className="flex">
         {/* Left Sidebar */}
         <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-screen">
           <div className="p-6">
@@ -47,8 +47,10 @@ export default function SettingsLayout({
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-6">
-          {children}
+        <div className="flex-1">
+          <div className="max-w-4xl p-6">
+            {children}
+          </div>
         </div>
       </div>
     </div>
