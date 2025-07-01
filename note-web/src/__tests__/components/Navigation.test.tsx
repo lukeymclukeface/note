@@ -58,6 +58,10 @@ describe('Navigation', () => {
     expect(recordingsLinks).toHaveLength(2)
     expect(recordingsLinks[0]).toHaveAttribute('href', '/recordings')
     
+    const uploadLinks = screen.getAllByRole('link', { name: /Upload/ })
+    expect(uploadLinks).toHaveLength(2)
+    expect(uploadLinks[0]).toHaveAttribute('href', '/upload')
+    
     // Check secondary navigation
     const settingsLinks = screen.getAllByRole('link', { name: /Settings/ })
     expect(settingsLinks).toHaveLength(2)
@@ -74,6 +78,7 @@ describe('Navigation', () => {
     expect(screen.getAllByText('💼')).toHaveLength(2) // Interviews
     expect(screen.getAllByText('📅')).toHaveLength(2) // Calendar
     expect(screen.getAllByText('🎤')).toHaveLength(2) // Recordings
+    expect(screen.getAllByText('📤')).toHaveLength(2) // Upload
     expect(screen.getAllByText('⚙️')).toHaveLength(2) // Settings
   })
 
@@ -150,11 +155,13 @@ describe('Navigation', () => {
     render(<NavigationWrapper />)
     
     // Check that all navigation items are present
+    expect(screen.getAllByRole('link', { name: /Dashboard/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Notes/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Meetings/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Interviews/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Calendar/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Recordings/ })).toHaveLength(2)
+    expect(screen.getAllByRole('link', { name: /Upload/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Settings/ })).toHaveLength(2)
     
     // Check that mobile menu elements are present

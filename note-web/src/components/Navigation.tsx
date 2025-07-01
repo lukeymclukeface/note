@@ -12,6 +12,7 @@ const navigation = [
   { name: 'Interviews', href: '/interviews', icon: '💼' },
   { name: 'Calendar', href: '/calendar', icon: '📅' },
   { name: 'Recordings', href: '/recordings', icon: '🎤' },
+  { name: 'Upload', href: '/upload', icon: '📤' },
 ];
 
 const secondaryNavigation = [
