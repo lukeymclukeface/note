@@ -1,6 +1,7 @@
 import { getAllInterviews } from '@/lib/database';
 import InterviewCard from '@/components/InterviewCard';
 import { Card, CardContent } from '@/components/ui/card';
+import { Users } from 'lucide-react';
 
 export default function InterviewsPage() {
   const interviews = getAllInterviews();
@@ -22,9 +23,7 @@ export default function InterviewsPage() {
           <Card className="p-8 text-center">
             <CardContent>
               <div className="text-muted-foreground mb-4">
-                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V4a2 2 0 00-2-2H6a2 2 0 00-2 2v2m0 0v6.586a1 1 0 00.293.707l2.828 2.828a1 1 0 00.707.293h8.344a1 1 0 00.707-.293l2.828-2.828a1 1 0 00.293-.707V6z" />
-                </svg>
+                <Users className="mx-auto h-16 w-16" />
               </div>
               <h3 className="text-lg font-medium mb-2">No interviews yet</h3>
               <p className="text-muted-foreground mb-4">

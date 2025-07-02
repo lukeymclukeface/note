@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { CheckCircle, XCircle, Music, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle, XCircle, Music, FileText, Loader2, Upload } from 'lucide-react';
 
 interface UploadResult {
   success: boolean;
@@ -138,20 +138,15 @@ export default function UploadPage() {
             <div className="space-y-4">
               {isUploading ? (
                 <>
-                  <div className="mx-auto h-16 w-16 animate-spin">
-                    <svg className="h-16 w-16 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                  <div className="mx-auto h-16 w-16">
+                    <Loader2 className="h-16 w-16 text-primary animate-spin" />
                   </div>
-                  <p className="text-lg text-gray-600 dark:text-gray-300">Uploading...</p>
+                  <p className="text-lg text-muted-foreground">Uploading...</p>
                 </>
               ) : (
                 <>
                   <div className="mx-auto h-16 w-16 text-muted-foreground">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
+                    <Upload className="h-16 w-16" />
                   </div>
                   <div>
                     <p className="text-lg">
@@ -172,8 +167,8 @@ export default function UploadPage() {
           <Alert className={`mb-8 ${
             uploadResult.success 
               ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
-              : 'border-destructive bg-destructive/10 text-destructive'
-          }`}>
+              : ''
+          }`} variant={uploadResult.success ? 'default' : 'destructive'}>
             <div className="flex items-center">
               <div className="mr-3">
                 {uploadResult.success ? (

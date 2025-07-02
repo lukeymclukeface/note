@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getDashboardStats, getRecentNotes, getRecentMeetings, getRecentInterviews, getRecentRecordings } from '@/lib/database';
 import NoteCard from '@/components/NoteCard';
 import MeetingCard from '@/components/MeetingCard';
-import { FileText, Users, Briefcase, Mic } from 'lucide-react';
+import { Users, Mic, Briefcase, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -203,9 +203,7 @@ export default function Home() {
             <Card className="p-8 text-center">
               <CardContent>
                 <div className="text-muted-foreground mb-4">
-                  <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <FileText className="mx-auto h-16 w-16" />
                 </div>
                 <h3 className="text-lg font-medium mb-2">Welcome to Note AI</h3>
                 <p className="text-muted-foreground mb-4">

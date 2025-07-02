@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
-import { Settings, Sun, Moon, Monitor, ChevronDown, User } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor, ChevronDown, User, Check } from 'lucide-react';
 
 const themes = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -77,17 +77,7 @@ export function UserDropdown() {
                 <themeOption.icon className="mr-3 h-4 w-4" />
                 <span>{themeOption.label}</span>
                 {theme === themeOption.value && (
-                  <svg
-                    className="ml-auto h-4 w-4 text-blue-600 dark:text-blue-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <Check className="ml-auto h-4 w-4 text-blue-600 dark:text-blue-400" />
                 )}
               </button>
             ))}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CalendarEvent } from '@/lib/database';
 import CalendarEventComponent from './CalendarEvent';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   getWeekDates,
   formatDate,
@@ -82,9 +83,7 @@ export default function WeekCalendar({ events }: WeekCalendarProps) {
               className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
               title="Previous week"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={goToToday}
@@ -97,9 +96,7 @@ export default function WeekCalendar({ events }: WeekCalendarProps) {
               className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
               title="Next week"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         </div>

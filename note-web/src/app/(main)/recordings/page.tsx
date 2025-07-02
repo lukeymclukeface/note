@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Mic } from 'lucide-react';
 
 export default function RecordingsPage() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
@@ -113,9 +114,7 @@ export default function RecordingsPage() {
           <Card className="p-8 text-center">
             <CardContent>
               <div className="text-muted-foreground mb-4">
-                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
+                <Mic className="mx-auto h-16 w-16" />
               </div>
               <h3 className="text-lg font-medium mb-2">No recordings yet</h3>
               <p className="text-muted-foreground mb-4">
@@ -151,9 +150,7 @@ export default function RecordingsPage() {
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-8 w-8">
                               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                                </svg>
+                                <Mic className="h-4 w-4 text-primary" />
                               </div>
                             </div>
                             <div className="ml-4">

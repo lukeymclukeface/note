@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
-import { Home, FileText, Users, Briefcase, Calendar, Import, Mic, Upload, User, Settings, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
+import { Home, FileText, Users, Briefcase, Calendar, Import, Mic, Upload, User, Settings, Sun, Moon, Monitor, ChevronDown, Menu, Check } from 'lucide-react';
 import NavbarRecorder from './NavbarRecorder';
 import { UserDropdownMenu } from './UserDropdownMenu';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -108,7 +108,7 @@ export default function Navigation() {
           {/* Right side: Secondary Navigation + Mobile Menu */}
           <div className="flex items-center">
 {/* Desktop User Menu */}
-            <div className="hidden sm:flex sm:items-center sm:space-x-3">
+            <div className="hidden sm:flex sm:items-center sm:space-x-4">
               <NavbarRecorder />
               <UserDropdownMenu />
             </div>
@@ -123,9 +123,7 @@ export default function Navigation() {
                 aria-expanded="false"
               >
                 <span className="sr-only">Open main menu</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <Menu className="h-6 w-6" />
               </button>
             </div>
           </div>
@@ -212,17 +210,7 @@ export default function Navigation() {
                   <themeOption.icon className="mr-2 h-4 w-4" />
                   {themeOption.label}
                   {theme === themeOption.value && (
-                    <svg
-                      className="inline ml-2 h-4 w-4 text-primary"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <Check className="inline ml-2 h-4 w-4 text-primary" />
                   )}
                 </button>
               ))}

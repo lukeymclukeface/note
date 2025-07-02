@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Config, HealthCheck, COMMON_EDITORS, DATE_FORMATS } from './types';
-import { Loader2, Rocket, X } from 'lucide-react';
+import { Loader2, Rocket, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -209,7 +209,7 @@ export default function GeneralSettingsPage() {
           Let&apos;s get you set up! The CLI configuration file doesn&apos;t exist yet.
         </p>
         
-        <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-left">
+        <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg p-8 text-left">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Getting Started</h2>
           <div className="space-y-4">
             <div className="border-l-4 border-blue-500 pl-4">
@@ -224,7 +224,7 @@ export default function GeneralSettingsPage() {
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                 Run any CLI command to create the initial configuration file:
               </p>
-              <code className="block bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-2 rounded font-mono text-sm">
+              <code className="block bg-secondary text-secondary-foreground px-3 py-2 rounded font-mono text-sm">
                 note --help
               </code>
             </div>
@@ -289,14 +289,14 @@ export default function GeneralSettingsPage() {
           {/* General Settings */}
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">General Settings</h2>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Editor</label>
                   <select
                     value={formData.editor || ''}
                     onChange={(e) => handleInputChange('editor', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted disabled:text-muted-foreground"
                     disabled={!isEditing}
                   >
                     {COMMON_EDITORS.map((editor) => (
@@ -311,7 +311,7 @@ export default function GeneralSettingsPage() {
                   <select
                     value={formData.date_format || ''}
                     onChange={(e) => handleInputChange('date_format', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted disabled:text-muted-foreground"
                     disabled={!isEditing}
                   >
                     {DATE_FORMATS.map((format) => (
@@ -348,7 +348,7 @@ export default function GeneralSettingsPage() {
                             type="text"
                             value={tagInput}
                             onChange={(e) => setTagInput(e.target.value)}
-                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:ring-2 focus:ring-ring focus:border-ring"
                             placeholder="Add a tag"
                             onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
                           />
@@ -380,7 +380,7 @@ export default function GeneralSettingsPage() {
           {/* File Paths */}
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">File Paths</h2>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Notes Directory</label>
@@ -388,7 +388,7 @@ export default function GeneralSettingsPage() {
                     type="text"
                     value={formData.notes_dir || ''}
                     onChange={(e) => handleInputChange('notes_dir', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground font-mono text-sm focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted disabled:text-muted-foreground"
                     disabled={!isEditing}
                     placeholder="/path/to/notes"
                   />
@@ -399,7 +399,7 @@ export default function GeneralSettingsPage() {
                     type="text"
                     value={formData.database_path || ''}
                     onChange={(e) => handleInputChange('database_path', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-500 dark:disabled:text-gray-400"
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground font-mono text-sm focus:ring-2 focus:ring-ring focus:border-ring disabled:bg-muted disabled:text-muted-foreground"
                     disabled={!isEditing}
                     placeholder="/path/to/database.db"
                   />
@@ -409,7 +409,7 @@ export default function GeneralSettingsPage() {
                   <input
                     type="text"
                     value="~/.noteai/config.json"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-mono text-sm cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-input rounded-md bg-muted text-muted-foreground font-mono text-sm cursor-not-allowed"
                     readOnly
                   />
                 </div>
@@ -420,7 +420,7 @@ export default function GeneralSettingsPage() {
           {/* Status */}
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">System Status</h2>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Configuration</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="flex items-center">
@@ -449,10 +449,7 @@ export default function GeneralSettingsPage() {
                   >
                     {isLoadingHealth ? (
                       <span className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
                         Checking...
                       </span>
                     ) : (
@@ -494,17 +491,12 @@ export default function GeneralSettingsPage() {
                                 >
                                   {installingDeps.has(check.name) ? (
                                     <>
-                                      <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                      </svg>
+                                      <Loader2 className="animate-spin h-3 w-3" />
                                       <span>Installing...</span>
                                     </>
                                   ) : (
                                     <>
-                                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                      </svg>
+                                      <Plus className="h-3 w-3" />
                                       <span>Install</span>
                                     </>
                                   )}

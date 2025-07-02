@@ -1,6 +1,7 @@
 import { getAllRecordings } from '@/lib/database';
 import WeekCalendar from '@/components/WeekCalendar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Calendar } from 'lucide-react';
 
 export default function CalendarPage() {
   // Get all recordings and convert to calendar events
@@ -36,9 +37,7 @@ export default function CalendarPage() {
           <Card className="p-8 text-center">
             <CardContent>
               <div className="text-muted-foreground mb-4">
-                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                <Calendar className="mx-auto h-16 w-16" />
               </div>
               <h3 className="text-lg font-medium mb-2">No recordings yet</h3>
               <p className="text-muted-foreground mb-4">
