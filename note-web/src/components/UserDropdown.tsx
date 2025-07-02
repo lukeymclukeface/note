@@ -1,15 +1,21 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { useThemes } from '@/lib/useThemes';
+import { useTheme } from '@/providers/ThemeProvider';
 
-export function ThemeSelector() {
-  const { theme, setTheme, themes } = useThemes();
+const themes = [
+  { value: 'light', label: 'Light', icon: '☀️' },
+  { value: 'dark', label: 'Dark', icon: '🌙' },
+  { value: 'system', label: 'System', icon: '💻' },
+] as const;
+
+export function UserDropdown() {
+  const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const currentTheme = themes.find(t => t.value === theme) || themes[0];
-
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -22,15 +28,15 @@ export function ThemeSelector() {
   }, []);
 
   return (
-    <div className="relative" data-testid="theme-selector" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef}>
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <span className="mr-2">{currentTheme.icon}</span>
-        <span className="hidden sm:inline">{currentTheme.label}</span>
+        <span className="text-lg">👤</span>
         <svg 
           className="ml-2 -mr-1 h-4 w-4" 
           fill="none" 
@@ -48,7 +54,24 @@ export function ThemeSelector() {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
-          <div className="py-1" role="menu" aria-orientation="vertical">
+          <div className="py-1">
+            {/* Settings Link */}
+            <Link
+              href="/settings"
+              onClick={() => setIsOpen(false)}
+              className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 block px-4 py-2 text-sm"
+            >
+              <span className="mr-2">⚙️</span>
+              Settings
+            </Link>
+            
+            {/* Divider */}
+            <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+            
+            {/* Theme Options */}
+            <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Theme
+            </div>
             {themes.map((themeOption) => (
               <button
                 key={themeOption.value}
@@ -61,7 +84,6 @@ export function ThemeSelector() {
                     ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                     : 'text-gray-700 dark:text-gray-200'
                 } group flex items-center px-4 py-2 text-sm w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
-                role="menuitem"
               >
                 <span className="mr-3">{themeOption.icon}</span>
                 <span>{themeOption.label}</span>
