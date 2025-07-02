@@ -15,10 +15,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var importCmd = &cobra.Command{
-	Use:   "import [file]",
-	Short: "Import and process an audio or text file",
-	Long: `Import and process a file. For audio files, convert to MP3 if needed, add to recordings database, 
+var summariseCmd = &cobra.Command{
+	Use:   "summarise [file]",
+	Short: "Summarise and process an audio or text file",
+	Long: `Summarise and process a file. For audio files, convert to MP3 if needed, add to recordings database, 
 transcribe, create a summary, and save as a note.
 For text files, read the content, create a summary, and save as a note.
 
@@ -33,24 +33,24 @@ Requires:
 - OpenAI API key configured (run 'note setup')
 - ffmpeg installed for audio format conversion`,
 	Args: cobra.MaximumNArgs(1),
-	RunE: importFile,
+	RunE: summariseFile,
 }
 
 func init() {
-	rootCmd.AddCommand(importCmd)
+	rootCmd.AddCommand(summariseCmd)
 }
 
-func importFile(cmd *cobra.Command, args []string) error {
+func summariseFile(cmd *cobra.Command, args []string) error {
 	var filePath string
 	
 	// Initialize services with verbose logging
 	verboseLogger := services.NewVerboseLogger(IsVerbose())
-	verboseLogger.StartCommand("import", args)
+	verboseLogger.StartCommand("summarise", args)
 	start := time.Now()
 	successful := true
 	
 	defer func() {
-		verboseLogger.EndCommand("import", time.Since(start), successful)
+		verboseLogger.EndCommand("summarise", time.Since(start), successful)
 	}()
 
 
@@ -99,7 +99,7 @@ func importFile(cmd *cobra.Command, args []string) error {
 		}
 
 		selectField := huh.NewSelect[string]().
-			Title("Select a file to import:").
+			Title("Select a file to summarise:").
 			Options(options...).
 			Value(&filePath)
 
@@ -118,28 +118,120 @@ func importFile(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("file does not exist: %s", filePath)
 	}
 
+	// Initialize database connection for source file tracking
+	cfg, db, err := helpers.LoadConfigAndDatabase()
+	if err != nil {
+		successful = false
+		verboseLogger.Error(err, "Failed to initialize database")
+		return fmt.Errorf("failed to initialize database: %w", err)
+	}
+	defer db.Close()
+
+	// Check if file is already being processed or has been processed
+	verboseLogger.Step("Checking file processing status", "")
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		successful = false
+		verboseLogger.Error(err, "Failed to get absolute path")
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Check if file already exists in source_files table
+	existingFile, err := database.GetSourceFileByPath(db, absFilePath)
+	if err != nil {
+		successful = false
+		verboseLogger.Error(err, "Failed to check existing file")
+		return fmt.Errorf("failed to check existing file: %w", err)
+	}
+
+	if existingFile != nil {
+		if existingFile.ProcessingStatus == "completed" {
+			return fmt.Errorf("file has already been processed successfully (ID: %d, converted to: %s)", existingFile.ID, helpers.SafeStringDeref(existingFile.ConvertedPath))
+		} else if existingFile.ProcessingStatus == "processing" {
+			return fmt.Errorf("file is currently being processed (ID: %d)", existingFile.ID)
+		} else if existingFile.ProcessingStatus == "failed" {
+			verboseLogger.Debug(fmt.Sprintf("File previously failed processing (ID: %d), retrying", existingFile.ID))
+			// Update status to processing to retry
+			if err := database.UpdateSourceFileStatus(db, existingFile.ID, "processing"); err != nil {
+				verboseLogger.Error(err, "Failed to update file status for retry")
+				return fmt.Errorf("failed to update file status for retry: %w", err)
+			}
+		}
+	} else {
+		// Create new source file record
+		verboseLogger.Step("Creating source file record", "")
+		fileHash, mimeType, fileType, fileSize, metadata, err := helpers.ProcessFileForDatabase(absFilePath)
+		if err != nil {
+			successful = false
+			verboseLogger.Error(err, "Failed to process file metadata")
+			return fmt.Errorf("failed to process file metadata: %w", err)
+		}
+
+		// Check if file with same hash already exists
+		existingByHash, err := database.GetSourceFileByHash(db, fileHash)
+		if err != nil {
+			successful = false
+			verboseLogger.Error(err, "Failed to check file by hash")
+			return fmt.Errorf("failed to check file by hash: %w", err)
+		}
+
+		if existingByHash != nil {
+			return fmt.Errorf("a file with identical content has already been processed (original: %s, ID: %d)", existingByHash.FilePath, existingByHash.ID)
+		}
+
+		// Create source file record
+		existingFile, err = database.CreateSourceFile(db, absFilePath, fileHash, fileSize, fileType, mimeType, metadata)
+		if err != nil {
+			successful = false
+			verboseLogger.Error(err, "Failed to create source file record")
+			return fmt.Errorf("failed to create source file record: %w", err)
+		}
+
+		// Update status to processing
+		if err := database.UpdateSourceFileStatus(db, existingFile.ID, "processing"); err != nil {
+			verboseLogger.Error(err, "Failed to update file status to processing")
+			return fmt.Errorf("failed to update file status to processing: %w", err)
+		}
+	}
+
 	// Determine file type and process accordingly
 	verboseLogger.Step("Determining file type", fmt.Sprintf("Extension: %s", filepath.Ext(filePath)))
+	var processingErr error
+	var outputPath string
+	
 	if audioService.IsValidTextFile(filePath) {
 		verboseLogger.Debug("Processing as text file")
-		err := processTextFile(filePath, uiService, fileService, verboseLogger, summaryProvider)
-		if err != nil {
-			successful = false
-		}
-		return err
+		outputPath, processingErr = processTextFileWithTracking(absFilePath, uiService, fileService, verboseLogger, summaryProvider)
 	} else if audioService.IsValidAudioFile(filePath) {
 		verboseLogger.Debug("Processing as audio file")
-		err := processAudioFile(filePath, audioService, fileService, uiService, verboseLogger, transcriptionProvider, summaryProvider)
-		if err != nil {
-			successful = false
-		}
-		return err
+		outputPath, processingErr = processAudioFileWithTracking(absFilePath, audioService, fileService, uiService, verboseLogger, transcriptionProvider, summaryProvider)
 	} else {
-		successful = false
-		err := fmt.Errorf("invalid file format. Supported formats: mp3, wav, m4a, ogg, flac, md, txt. Got: %s", filepath.Ext(filePath))
-		verboseLogger.Error(err, "File type validation failed")
-		return err
+		processingErr = fmt.Errorf("invalid file format. Supported formats: mp3, wav, m4a, ogg, flac, md, txt. Got: %s", filepath.Ext(filePath))
+		verboseLogger.Error(processingErr, "File type validation failed")
 	}
+	
+	// Update source file status based on processing result
+	if processingErr != nil {
+		successful = false
+		// Mark as failed
+		if updateErr := database.UpdateSourceFileStatus(db, existingFile.ID, "failed"); updateErr != nil {
+			verboseLogger.Error(updateErr, "Failed to update file status to failed")
+		}
+		return processingErr
+	} else {
+		// Mark as completed and set converted path if available
+		if outputPath != "" {
+			if updateErr := database.UpdateSourceFileConvertedPath(db, existingFile.ID, outputPath); updateErr != nil {
+				verboseLogger.Error(updateErr, "Failed to update converted path")
+			}
+		}
+		if updateErr := database.UpdateSourceFileStatus(db, existingFile.ID, "completed"); updateErr != nil {
+			verboseLogger.Error(updateErr, "Failed to update file status to completed")
+			return fmt.Errorf("processing succeeded but failed to update status: %w", updateErr)
+		}
+	}
+	
+	return nil
 }
 
 func processTextFile(filePath string, uiService *services.UIService, fileService *services.FileService, verboseLogger *services.VerboseLogger, summaryProvider services.AIProvider) error {
@@ -202,9 +294,9 @@ if err := fileService.SaveMarkdownFiles("", summaryStr, transcriptionPath, summa
 
 	// Create a metadata note in the database
 	folderName := filepath.Base(destinationDir)
-	noteContent := fmt.Sprintf("Text file imported and processed.\n\nContent Type: %s\n\nFiles:\n- Summary: %s\n\nFolder: %s",
+	noteContent := fmt.Sprintf("Text file summarised and processed.\n\nContent Type: %s\n\nFiles:\n- Summary: %s\n\nFolder: %s",
 		contentAnalysis.ContentType, "summary.md", folderName)
-	tags := fmt.Sprintf("imported,text,%s,summary", contentAnalysis.ContentType)
+	tags := fmt.Sprintf("summarised,text,%s,summary", contentAnalysis.ContentType)
 
 	_, err = uiService.RunTaskWithSpinner("📋 Creating metadata note", func() (interface{}, error) {
 		switch contentAnalysis.ContentType {
@@ -250,7 +342,13 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 		return err
 	}
 
-	// Convert to MP3 if necessary
+	// Initialize cache service
+	cacheService := services.NewCacheService()
+	if err := cacheService.InitializeCache(); err != nil {
+		verboseLogger.Error(err, "Failed to initialize cache, proceeding without cache")
+	}
+
+	// Convert to MP3 if necessary (using cache)
 	mp3Path, err := uiService.RunTaskWithSpinner("🔄 Converting to MP3 format", func() (interface{}, error) {
 		return audioService.ConvertToMP3(filePath)
 	})
@@ -311,17 +409,15 @@ func processAudioFile(filePath string, audioService *services.AudioService, file
 		return fmt.Errorf("failed to save recording: %w", err)
 	}
 
-	// Initialize OpenAI service
-	verboseLogger.Step("Initializing OpenAI service", "")
-// Transcribe using chunked approach for longer files
+	// Transcribe using helper function
 	transcriptResult, err := uiService.RunTaskWithSpinner("📝 Transcribing audio", func() (interface{}, error) {
-	return audioService.TranscribeFileChunked(newFilePath, destinationDir, transcriptionProvider)
+		return helpers.TranscribeAudioFile(newFilePath, destinationDir, verboseLogger)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to transcribe file: %w", err)
 	}
 
-	transcript := transcriptResult.(*services.ChunkedTranscriptionResult).FullTranscript
+	transcript := transcriptResult.(*helpers.TranscriptionResult).FullTranscript
 
 	// Analyze content type and generate title
 	analysis, err := uiService.RunTaskWithSpinner("🔍 Analyzing content type and generating title", func() (interface{}, error) {
@@ -396,9 +492,9 @@ _, err = uiService.RunTaskWithSpinner("📝 Saving transcription and summary fil
 
 	// Create a metadata note that references the files
 	folderName := filepath.Base(destinationDir)
-	noteContent := fmt.Sprintf("Audio file imported and processed.\n\nContent Type: %s\n\nFiles:\n- Audio: %s\n- Transcription: %s\n- Summary: %s\n\nFolder: %s",
+	noteContent := fmt.Sprintf("Audio file summarised and processed.\n\nContent Type: %s\n\nFiles:\n- Audio: %s\n- Transcription: %s\n- Summary: %s\n\nFolder: %s",
 		contentAnalysis.ContentType, filename, "transcription.md", "summary.md", folderName)
-	tags := fmt.Sprintf("imported,audio,%s,transcription,summary", contentAnalysis.ContentType)
+	tags := fmt.Sprintf("summarised,audio,%s,transcription,summary", contentAnalysis.ContentType)
 
 	_, err = uiService.RunTaskWithSpinner("📋 Creating metadata note", func() (interface{}, error) {
 		switch contentAnalysis.ContentType {
@@ -417,10 +513,36 @@ _, err = uiService.RunTaskWithSpinner("📝 Saving transcription and summary fil
 		return fmt.Errorf("failed to save metadata note: %w", err)
 	}
 
-	fmt.Printf("✅ File '%s' successfully imported and processed:\n", filename)
+	fmt.Printf("✅ File '%s' successfully summarised and processed:\n", filename)
 	fmt.Printf("   📁 Saved to notes directory: %s\n", destinationDir)
 	fmt.Printf("   🎵 Added to recordings database\n")
 	fmt.Printf("   📝 Transcribed and summarized\n")
 	fmt.Printf("   📋 Note created: %s\n", contentAnalysis.Title)
 	return nil
+}
+
+// processTextFileWithTracking processes a text file and returns the output path
+func processTextFileWithTracking(filePath string, uiService *services.UIService, fileService *services.FileService, verboseLogger *services.VerboseLogger, summaryProvider services.AIProvider) (string, error) {
+	err := processTextFile(filePath, uiService, fileService, verboseLogger, summaryProvider)
+	if err != nil {
+		return "", err
+	}
+	
+	// Return the base directory where files are stored
+	// For text files, we can't predict the exact path without reproducing the logic
+	// but we can return a general indication
+	return "processed-to-notes-directory", nil
+}
+
+// processAudioFileWithTracking processes an audio file and returns the output path
+func processAudioFileWithTracking(filePath string, audioService *services.AudioService, fileService *services.FileService, uiService *services.UIService, verboseLogger *services.VerboseLogger, transcriptionProvider services.AIProvider, summaryProvider services.AIProvider) (string, error) {
+	err := processAudioFile(filePath, audioService, fileService, uiService, verboseLogger, transcriptionProvider, summaryProvider)
+	if err != nil {
+		return "", err
+	}
+	
+	// Return the base directory where files are stored
+	// For audio files, we can't predict the exact path without reproducing the logic
+	// but we can return a general indication
+	return "processed-to-notes-directory", nil
 }

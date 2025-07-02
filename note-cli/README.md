@@ -52,16 +52,46 @@ View current configuration:
 ./note record --device "Built-in Microphone"
 ```
 
-### Importing Content
+### Summarising Content
 ```bash
-# Import audio file
-./note import audio.mp3
+# Summarise audio file
+./note summarise audio.mp3
 
-# Import text/markdown file
-./note import document.md
+# Summarise text/markdown file
+./note summarise document.md
 
 # Interactive file selection (if no file specified)
-./note import
+./note summarise
+```
+
+### Transcribing Audio
+```bash
+# Transcribe audio file to stdout
+./note transcribe audio.mp3
+
+# Save transcription to file
+./note transcribe audio.mp3 --output transcription.txt
+
+# Generate markdown format with metadata
+./note transcribe audio.mp3 --format markdown --output notes.md
+
+# Save chunk files for long recordings
+./note transcribe long_meeting.mp3 --chunks --dir ./output
+```
+
+### Cache Management
+```bash
+# Clean up old cache files (older than 24 hours)
+./note cleanup
+
+# Force cleanup without confirmation
+./note cleanup --force
+
+# Remove all cache files
+./note cleanup --all
+
+# Remove files older than specific duration
+./note cleanup --older-than 7d
 ```
 
 ### Managing Notes
@@ -105,6 +135,8 @@ View current configuration:
 ### Data Management
 - **SQLite database**: Efficient metadata storage
 - **File organization**: Structured storage in `~/.noteai/`
+- **Intelligent caching**: Temporary files managed in `~/.noteai/.cache`
+- **Automatic cleanup**: Old cache files removed automatically
 - **Backup-friendly**: All data in user home directory
 
 ## Architecture
@@ -143,7 +175,7 @@ All configuration stored in `~/.noteai/`:
 1. **Setup**: `./note setup`
 2. **Configure models**: `./note config model`
 3. **Record meeting**: `./note record`
-4. **Import existing audio**: `./note import meeting.mp3`
+4. **Summarise existing audio**: `./note summarise meeting.mp3`
 5. **Browse notes**: `./note list`
 6. **View recordings**: `./note recordings`
 
@@ -151,7 +183,7 @@ All configuration stored in `~/.noteai/`:
 
 Enable detailed logging for any command:
 ```bash
-./note import audio.mp3 --verbose
+./note summarise audio.mp3 --verbose
 ```
 
 Shows:

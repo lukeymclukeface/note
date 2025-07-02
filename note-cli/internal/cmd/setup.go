@@ -290,10 +290,29 @@ func createDirectoryStructure() error {
 		return fmt.Errorf("failed to create recordings directory: %w", err)
 	}
 
+	// Create cache directory
+	cacheDir, err := constants.GetCacheDir()
+	if err != nil {
+		return fmt.Errorf("failed to get cache directory: %w", err)
+	}
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		return fmt.Errorf("failed to create cache directory: %w", err)
+	}
+
+	// Create temp directory within cache
+	tempDir, err := constants.GetTempDir()
+	if err != nil {
+		return fmt.Errorf("failed to get temp directory: %w", err)
+	}
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return fmt.Errorf("failed to create temp directory: %w", err)
+	}
+
 	fmt.Printf("   ✅ Created: %s\n", notesDir)
 	fmt.Printf("   ✅ Created: %s\n", meetingsDir)
 	fmt.Printf("   ✅ Created: %s\n", interviewsDir)
 	fmt.Printf("   ✅ Created: %s\n", recordingsDir)
+	fmt.Printf("   ✅ Created: %s\n", cacheDir)
 
 	return nil
 }

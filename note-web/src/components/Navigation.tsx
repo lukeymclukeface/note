@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
-import { Home, FileText, Users, Briefcase, Calendar, Import, User, Settings, Sun, Moon, Monitor, Menu, Check } from 'lucide-react';
+import { Home, FileText, Calendar, Import, User, Settings, Sun, Moon, Monitor, Menu, Check } from 'lucide-react';
 import NavbarRecorder from './NavbarRecorder';
 import { UserDropdownMenu } from './UserDropdownMenu';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -11,8 +11,6 @@ import { useTheme } from '@/providers/ThemeProvider';
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Notes', href: '/notes', icon: FileText },
-  { name: 'Meetings', href: '/meetings', icon: Users },
-  { name: 'Interviews', href: '/interviews', icon: Briefcase },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Import', href: '/import', icon: Import },
 ];
@@ -44,6 +42,8 @@ export default function Navigation() {
               {navigation.map((item) => {
                 const isActive = item.href === '/import' 
                   ? pathname?.startsWith('/import') || pathname === '/recordings' || pathname === '/upload'
+                  : item.href === '/notes'
+                  ? pathname?.startsWith('/notes') || pathname === '/meetings' || pathname === '/interviews'
                   : pathname === item.href;
                 return (
                   <Link
@@ -94,6 +94,8 @@ export default function Navigation() {
             {navigation.map((item) => {
               const isActive = item.href === '/import' 
                 ? pathname?.startsWith('/import') || pathname === '/recordings' || pathname === '/upload'
+                : item.href === '/notes'
+                ? pathname?.startsWith('/notes') || pathname === '/meetings' || pathname === '/interviews'
                 : pathname === item.href;
               return (
                 <Link

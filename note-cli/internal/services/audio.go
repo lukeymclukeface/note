@@ -102,8 +102,13 @@ type ChunkedTranscriptionResult struct {
 	ChunkFiles     []string // Paths to individual chunk transcript files
 }
 
-// TranscribeFileChunked transcribes a large audio file in chunks
+// TranscribeFileChunked transcribes a large audio file in chunks using cache system
 func (s *AudioService) TranscribeFileChunked(filePath, destinationDir string, provider AIProvider) (*ChunkedTranscriptionResult, error) {
+	return s.TranscribeFileChunkedWithCache(filePath, destinationDir, provider, nil)
+}
+
+// TranscribeFileChunkedWithCache transcribes a large audio file in chunks using provided cache session
+func (s *AudioService) TranscribeFileChunkedWithCache(filePath, destinationDir string, provider AIProvider, session *ProcessingSession) (*ChunkedTranscriptionResult, error) {
 	// Define the chunk duration (e.g., 10 minutes)
 	chunkDuration := 10 * 60 // 10 minutes in seconds
 
@@ -143,7 +148,18 @@ func (s *AudioService) TranscribeFileChunked(filePath, destinationDir string, pr
 
 		fmt.Printf("📝 Transcribing chunk %d/%d (%.1f-%.1f minutes)\n", chunk, totalChunks, startMin, endMin)
 
-		chunkFilePath := fmt.Sprintf("%s_chunk_%d.wav", filePath, start)
+		// Create temporary chunk file path
+		var chunkFilePath string
+		if session != nil {
+			// Use cache session for chunk file
+			chunkFilePath, err = session.CreateTempFile(fmt.Sprintf("chunk_%d", start), ".wav")
+			if err != nil {
+				return nil, fmt.Errorf("failed to create temp chunk file: %w", err)
+			}
+		} else {
+			// Fallback to old method if no session provided
+			chunkFilePath = fmt.Sprintf("%s_chunk_%d.wav", filePath, start)
+		}
 
 		// Split the audio file into chunks using ffmpeg
 		err := s.SplitAudio(filePath, chunkFilePath, start, chunkDuration)
@@ -152,7 +168,11 @@ func (s *AudioService) TranscribeFileChunked(filePath, destinationDir string, pr
 		}
 
 		chunkTranscript, err := provider.TranscribeAudioFile(chunkFilePath)
-		os.Remove(chunkFilePath) // Clean up the chunk file
+		
+		// Clean up the chunk file immediately after transcription
+		if session == nil {
+			os.Remove(chunkFilePath) // Only remove if not managed by cache session
+		}
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to transcribe chunk %d: %w", chunk, err)
@@ -164,16 +184,25 @@ func (s *AudioService) TranscribeFileChunked(filePath, destinationDir string, pr
 		// Save individual chunk transcription if destination directory is provided
 		if destinationDir != "" {
 			chunkFileName := fmt.Sprintf("transcription_chunk_%02d.md", chunk)
-			chunkFilePath := filepath.Join(destinationDir, chunkFileName)
-
 			chunkContent := fmt.Sprintf("# Transcription Chunk %d\n\n**Time Range:** %.1f - %.1f minutes\n\n%s\n",
 				chunk, startMin, endMin, chunkTranscript)
 
-			if writeErr := os.WriteFile(chunkFilePath, []byte(chunkContent), 0644); writeErr != nil {
-				// Don't fail the entire process if we can't save the chunk, just log it
-				fmt.Printf("Warning: Failed to save chunk %d transcription: %v\n", chunk, writeErr)
+			if session != nil {
+				// Save to cache session
+				chunkKey := fmt.Sprintf("chunk_%02d", chunk)
+				if chunkPath, saveErr := session.SaveOutputFile(chunkKey, chunkContent); saveErr != nil {
+					fmt.Printf("Warning: Failed to save chunk %d to cache: %v\n", chunk, saveErr)
+				} else {
+					chunkFiles = append(chunkFiles, chunkPath)
+				}
 			} else {
-				chunkFiles = append(chunkFiles, chunkFilePath)
+				// Save directly to destination directory (old method)
+				chunkFilePath := filepath.Join(destinationDir, chunkFileName)
+				if writeErr := os.WriteFile(chunkFilePath, []byte(chunkContent), 0644); writeErr != nil {
+					fmt.Printf("Warning: Failed to save chunk %d transcription: %v\n", chunk, writeErr)
+				} else {
+					chunkFiles = append(chunkFiles, chunkFilePath)
+				}
 			}
 		}
 	}

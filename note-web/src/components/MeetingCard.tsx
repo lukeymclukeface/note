@@ -34,7 +34,7 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
         <div className="flex items-start justify-between">
           <h3 className="text-lg font-semibold line-clamp-2">
             <Link 
-              href={`/meetings/${meeting.id}`}
+              href={`/notes/meetings/${meeting.id}`}
               className="hover:text-primary transition-colors duration-200"
             >
               {meeting.title}

@@ -70,3 +70,21 @@ func GetConfigPath() (string, error) {
 	}
 	return filepath.Join(baseDir, "config.json"), nil
 }
+
+// GetCacheDir returns the cache directory path
+func GetCacheDir() (string, error) {
+	baseDir, err := GetBaseDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(baseDir, ".cache"), nil
+}
+
+// GetTempDir returns a temporary directory within the cache for processing
+func GetTempDir() (string, error) {
+	cacheDir, err := GetCacheDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(cacheDir, "temp"), nil
+}
