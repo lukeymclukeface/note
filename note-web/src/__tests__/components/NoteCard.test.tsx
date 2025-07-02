@@ -18,10 +18,10 @@ describe('NoteCard', () => {
     expect(screen.getByText(/This is a test summary/)).toBeInTheDocument()
     
     // Check recording badge
-    expect(screen.getByText('🎵 Recording')).toBeInTheDocument()
+    expect(screen.getByText('Recording')).toBeInTheDocument()
     
     // Check note badge
-    expect(screen.getByText('📝 Note')).toBeInTheDocument()
+    expect(screen.getByText('Note')).toBeInTheDocument()
     
     // Check tags
     expect(screen.getByText('test')).toBeInTheDocument()
@@ -42,7 +42,7 @@ describe('NoteCard', () => {
     expect(screen.queryByText('🎵 Recording')).not.toBeInTheDocument()
     
     // Should still have note badge
-    expect(screen.getByText('📝 Note')).toBeInTheDocument()
+    expect(screen.getByText('Note')).toBeInTheDocument()
   })
   
   it('formats date correctly', () => {

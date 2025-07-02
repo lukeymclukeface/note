@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
+import { Settings, Sun, Moon, Monitor, ChevronDown, User } from 'lucide-react';
 
 const themes = [
-  { value: 'light', label: 'Light', icon: '☀️' },
-  { value: 'dark', label: 'Dark', icon: '🌙' },
-  { value: 'system', label: 'System', icon: '💻' },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Monitor },
 ] as const;
 
 export function UserDropdown() {
@@ -36,20 +37,8 @@ export function UserDropdown() {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <span className="text-lg">👤</span>
-        <svg 
-          className="ml-2 -mr-1 h-4 w-4" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M19 9l-7 7-7-7" 
-          />
-        </svg>
+        <User className="text-lg" />
+        <ChevronDown className="ml-2 -mr-1 h-4 w-4" />
       </button>
 
       {isOpen && (
@@ -61,7 +50,7 @@ export function UserDropdown() {
               onClick={() => setIsOpen(false)}
               className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 block px-4 py-2 text-sm"
             >
-              <span className="mr-2">⚙️</span>
+              <Settings className="mr-2 h-4 w-4" />
               Settings
             </Link>
             
@@ -85,7 +74,7 @@ export function UserDropdown() {
                     : 'text-gray-700 dark:text-gray-200'
                 } group flex items-center px-4 py-2 text-sm w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
               >
-                <span className="mr-3">{themeOption.icon}</span>
+                <themeOption.icon className="mr-3 h-4 w-4" />
                 <span>{themeOption.label}</span>
                 {theme === themeOption.value && (
                   <svg

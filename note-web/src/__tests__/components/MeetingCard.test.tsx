@@ -33,10 +33,10 @@ describe('MeetingCard', () => {
     expect(screen.getByText(/Discussion about project progress/)).toBeInTheDocument()
     
     // Check recording badge
-    expect(screen.getByText('🎵 Recording')).toBeInTheDocument()
+    expect(screen.getByText('Recording')).toBeInTheDocument()
     
     // Check meeting badge
-    expect(screen.getByText('📅 Meeting')).toBeInTheDocument()
+    expect(screen.getByText('Meeting')).toBeInTheDocument()
     
     // Check tags
     expect(screen.getByText('meeting')).toBeInTheDocument()
@@ -63,7 +63,7 @@ describe('MeetingCard', () => {
     expect(screen.queryByText('🎵 Recording')).not.toBeInTheDocument()
     
     // Should still have meeting badge
-    expect(screen.getByText('📅 Meeting')).toBeInTheDocument()
+    expect(screen.getByText('Meeting')).toBeInTheDocument()
   })
   
   it('formats dates correctly', () => {

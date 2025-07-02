@@ -1,5 +1,6 @@
 import { Meeting } from '@/lib/database';
 import Link from 'next/link';
+import { Music, Calendar } from 'lucide-react';
 
 interface MeetingCardProps {
   meeting: Meeting;
@@ -39,11 +40,11 @@ export default function MeetingCard({ meeting }: MeetingCardProps) {
         <div className="flex items-center space-x-2 ml-4">
           {meeting.recording_id && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-              🎵 Recording
+              <Music className="mr-1 h-3 w-3" /> Recording
             </span>
           )}
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-            📅 Meeting
+            <Calendar className="mr-1 h-3 w-3" /> Meeting
           </span>
         </div>
       </div>

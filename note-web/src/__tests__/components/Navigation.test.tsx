@@ -62,17 +62,16 @@ describe('Navigation', () => {
     mockUsePathname.mockReturnValue('/')
     render(<NavigationWrapper />)
     
-    // Check for emoji icons (should appear in both desktop and mobile)
-    expect(screen.getAllByText('🏠')).toHaveLength(2) // Dashboard
-    expect(screen.getAllByText('📝')).toHaveLength(2) // Notes
-    expect(screen.getAllByText('🤝')).toHaveLength(2) // Meetings
-    expect(screen.getAllByText('💼')).toHaveLength(2) // Interviews
-    expect(screen.getAllByText('📅')).toHaveLength(2) // Calendar
-    expect(screen.getAllByText('📥')).toHaveLength(1) // Import dropdown icon (only in desktop)
-    expect(screen.getAllByText('🎤')).toHaveLength(1) // Recordings (only in mobile, dropdown hidden by default)
-    expect(screen.getAllByText('📤')).toHaveLength(1) // Upload (only in mobile, dropdown hidden by default)
-    expect(screen.getAllByText('⚙️')).toHaveLength(1) // Settings (consolidated in UserDropdown)
-    expect(screen.getAllByText('👤')).toHaveLength(2) // User icon (desktop and mobile)
+    // Check for lucide-react icons (should appear in both desktop and mobile)
+    expect(screen.getAllByRole('link', { name: /Dashboard/ })).toHaveLength(2) // Dashboard
+    expect(screen.getAllByRole('link', { name: /Notes/ })).toHaveLength(2) // Notes
+    expect(screen.getAllByRole('link', { name: /Meetings/ })).toHaveLength(2) // Meetings
+    expect(screen.getAllByRole('link', { name: /Interviews/ })).toHaveLength(2) // Interviews
+    expect(screen.getAllByRole('link', { name: /Calendar/ })).toHaveLength(2) // Calendar
+    expect(screen.getByRole('button', { name: /Import/ })).toBeInTheDocument() // Import dropdown button
+    expect(screen.getAllByRole('link', { name: /Recordings/ })).toHaveLength(1) // Recordings (only in mobile)
+    expect(screen.getAllByRole('link', { name: /Upload/ })).toHaveLength(1) // Upload (only in mobile)
+    expect(screen.getAllByRole('link', { name: /Settings/ })).toHaveLength(1) // Settings (consolidated in UserDropdown)
   })
 
   it('highlights active navigation item', () => {
@@ -99,8 +98,12 @@ describe('Navigation', () => {
     mockUsePathname.mockReturnValue('/')
     render(<NavigationWrapper />)
     
-    // Should have user dropdowns for both desktop and mobile
-    expect(screen.getAllByText('👤')).toHaveLength(2) // User icon in both desktop and mobile
+    // Should have user dropdown buttons for both desktop and mobile
+    // UserDropdown buttons don't have accessible names, so we'll check for the presence of buttons with UserDropdown styling
+    const userButtons = screen.getAllByRole('button').filter(button => 
+      button.className.includes('inline-flex items-center px-3 py-2 border')
+    )
+    expect(userButtons.length).toBeGreaterThanOrEqual(2) // At least 2 UserDropdown buttons
   })
 
   it('has proper dark mode classes', () => {
@@ -135,7 +138,10 @@ describe('Navigation', () => {
     render(<NavigationWrapper />)
     
     // Should have user dropdown for both desktop and mobile
-    expect(screen.getAllByText('👤')).toHaveLength(2) // User icon in both views
+    const userButtons = screen.getAllByRole('button').filter(button => 
+      button.className.includes('inline-flex items-center px-3 py-2 border')
+    )
+    expect(userButtons.length).toBeGreaterThanOrEqual(2) // At least 2 UserDropdown buttons
   })
 
   it('applies correct responsive classes', () => {
@@ -168,7 +174,10 @@ describe('Navigation', () => {
     
     // Check that mobile menu elements are present
     expect(screen.getByRole('button', { name: /Open main menu/ })).toBeInTheDocument()
-    expect(screen.getAllByText('👤')).toHaveLength(2) // User dropdown in both desktop and mobile
+    const userButtons = screen.getAllByRole('button').filter(button => 
+      button.className.includes('inline-flex items-center px-3 py-2 border')
+    )
+    expect(userButtons.length).toBeGreaterThanOrEqual(2) // User dropdown in both desktop and mobile
   })
 
   it('has proper accessibility attributes', () => {
@@ -188,20 +197,20 @@ describe('Navigation', () => {
     render(<NavigationWrapper />)
     
     // Find the Import button
-    const importButton = screen.getByRole('button', { name: '📥 Import' })
+    const importButton = screen.getByRole('button', { name: 'Import' })
     expect(importButton).toBeInTheDocument()
     
     // Initially, dropdown items should not be visible in desktop dropdown
     // Since dropdown is closed, dropdown items shouldn't be visible
-    // We check by looking for the dropdown container specifically
-    expect(screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')).toBeNull()
+    // We check by looking for the dropdown container specifically using the button
+    expect(importButton.closest('div')?.querySelector('.absolute')).toBeNull()
     
     // Click the Import button
     fireEvent.click(importButton)
     
     // Now dropdown items should be visible - we need to look for them specifically in the dropdown
     // Since there are already recordings/upload links in mobile, we check for the dropdown container
-    const dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    const dropdownContainer = importButton.closest('div')?.querySelector('.absolute')
     expect(dropdownContainer).toBeInTheDocument()
   })
 
@@ -209,18 +218,18 @@ describe('Navigation', () => {
     mockUsePathname.mockReturnValue('/')
     render(<NavigationWrapper />)
     
-    const importButton = screen.getByRole('button', { name: '📥 Import' })
+    const importButton = screen.getByRole('button', { name: 'Import' })
     
     // Open the dropdown
     fireEvent.click(importButton)
-    let dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    let dropdownContainer = importButton.closest('div')?.querySelector('.absolute')
     expect(dropdownContainer).toBeInTheDocument()
     
     // Click outside the dropdown
     fireEvent.mouseDown(document.body)
     
     // Dropdown should close
-    dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    dropdownContainer = importButton.closest('div')?.querySelector('.absolute')
     expect(dropdownContainer).toBeNull()
   })
 
@@ -228,11 +237,11 @@ describe('Navigation', () => {
     mockUsePathname.mockReturnValue('/')
     render(<NavigationWrapper />)
     
-    const importButton = screen.getByRole('button', { name: '📥 Import' })
+    const importButton = screen.getByRole('button', { name: 'Import' })
     
     // Open the dropdown
     fireEvent.click(importButton)
-    let dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    let dropdownContainer = importButton.closest('div')?.querySelector('.absolute')
     expect(dropdownContainer).toBeInTheDocument()
     
     // Find and click a link in the dropdown
@@ -241,7 +250,7 @@ describe('Navigation', () => {
     fireEvent.click(dropdownRecordingsLink!)
     
     // Dropdown should close
-    dropdownContainer = screen.queryByText('Import')?.closest('div')?.querySelector('.absolute')
+    dropdownContainer = importButton.closest('div')?.querySelector('.absolute')
     expect(dropdownContainer).toBeNull()
   })
 

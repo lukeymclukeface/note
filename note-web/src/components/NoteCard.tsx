@@ -1,4 +1,5 @@
 import { Note } from '@/lib/database';
+import { Music, FileText } from 'lucide-react';
 
 interface NoteCardProps {
   note: Note;
@@ -35,11 +36,11 @@ export default function NoteCard({ note }: NoteCardProps) {
         <div className="flex items-center space-x-2 ml-4">
           {note.recording_id && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-              🎵 Recording
+              <Music className="mr-1 h-3 w-3" /> Recording
             </span>
           )}
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-            📝 Note
+            <FileText className="mr-1 h-3 w-3" /> Note
           </span>
         </div>
       </div>

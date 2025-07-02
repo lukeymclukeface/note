@@ -1,4 +1,5 @@
 import { Interview } from '@/lib/database';
+import { Music, Briefcase } from 'lucide-react';
 
 interface InterviewCardProps {
   interview: Interview;
@@ -33,11 +34,11 @@ export default function InterviewCard({ interview }: InterviewCardProps) {
         <div className="flex items-center space-x-2 ml-4">
           {interview.recording_id && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-              🎵 Recording
+              <Music className="mr-1 h-3 w-3" /> Recording
             </span>
           )}
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-            💼 Interview
+            <Briefcase className="mr-1 h-3 w-3" /> Interview
           </span>
         </div>
       </div>

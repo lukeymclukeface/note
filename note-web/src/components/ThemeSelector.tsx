@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { themes, useThemes } from '@/lib/useThemes';
+import { ChevronDown } from 'lucide-react';
 
 export function ThemeSelector() {
   const { theme, setTheme } = useThemes();
@@ -29,21 +30,9 @@ export function ThemeSelector() {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <span className="mr-2">{currentTheme.icon}</span>
+        <currentTheme.icon className="mr-2 h-4 w-4" />
         <span className="hidden sm:inline">{currentTheme.label}</span>
-        <svg 
-          className="ml-2 -mr-1 h-4 w-4" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M19 9l-7 7-7-7" 
-          />
-        </svg>
+        <ChevronDown className="ml-2 -mr-1 h-4 w-4" />
       </button>
 
       {isOpen && (
@@ -63,8 +52,8 @@ export function ThemeSelector() {
                 } group flex items-center px-4 py-2 text-sm w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
                 role="menuitem"
               >
-                <span className="mr-3">{themeOption.icon}</span>
-                <span>{themeOption.label}</span>
+              <themeOption.icon className="mr-3 h-4 w-4" />
+              <span>{themeOption.label}</span>
                 {theme === themeOption.value && (
                   <svg
                     className="ml-auto h-4 w-4 text-blue-600 dark:text-blue-400"

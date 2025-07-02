@@ -4,27 +4,28 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect } from 'react';
+import { Home, FileText, Users, Briefcase, Calendar, Import, Mic, Upload, User, Settings, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
 import NavbarRecorder from './NavbarRecorder';
 import { UserDropdown } from './UserDropdown';
 import { useTheme } from '@/providers/ThemeProvider';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: '🏠' },
-  { name: 'Notes', href: '/notes', icon: '📝' },
-  { name: 'Meetings', href: '/meetings', icon: '🤝' },
-  { name: 'Interviews', href: '/interviews', icon: '💼' },
-  { name: 'Calendar', href: '/calendar', icon: '📅' },
+  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Notes', href: '/notes', icon: FileText },
+  { name: 'Meetings', href: '/meetings', icon: Users },
+  { name: 'Interviews', href: '/interviews', icon: Briefcase },
+  { name: 'Calendar', href: '/calendar', icon: Calendar },
 ];
 
 const importNavigation = [
-  { name: 'Recordings', href: '/recordings', icon: '🎤' },
-  { name: 'Upload', href: '/upload', icon: '📤' },
+  { name: 'Recordings', href: '/recordings', icon: Mic },
+  { name: 'Upload', href: '/upload', icon: Upload },
 ];
 
 const themes = [
-  { value: 'light', label: 'Light', icon: '☀️' },
-  { value: 'dark', label: 'Dark', icon: '🌙' },
-  { value: 'system', label: 'System', icon: '💻' },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Monitor },
 ] as const;
 
 export default function Navigation() {
@@ -77,7 +78,7 @@ export default function Navigation() {
                     'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium'
                   )}
                 >
-                  <span className="mr-2">{item.icon}</span>
+                  <item.icon className="mr-2 h-4 w-4" />
                   {item.name}
                 </Link>
               ))}
@@ -98,11 +99,9 @@ export default function Navigation() {
                   aria-haspopup="true"
                   tabIndex={0}
                 >
-                  <span className="mr-1">📥</span>
+                  <Import className="mr-1 h-4 w-4" />
                   Import
-                  <svg className="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
+                  <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
                 
                 {isImportDropdownOpen && (
@@ -120,7 +119,7 @@ export default function Navigation() {
                             'block px-4 py-2 text-sm'
                           )}
                         >
-                          <span className="mr-2">{item.icon}</span>
+                          <item.icon className="mr-2 h-4 w-4" />
                           {item.name}
                         </Link>
                       ))}
@@ -171,15 +170,16 @@ export default function Navigation() {
                   'block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
                 )}
               >
-                <span className="mr-2">{item.icon}</span>
+                <item.icon className="mr-2 h-4 w-4" />
                 {item.name}
               </Link>
             ))}
             
             {/* Import section in mobile */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
-              <div className="pl-3 pr-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                📥 Import
+              <div className="pl-3 pr-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                <Import className="mr-2 h-4 w-4" />
+                Import
               </div>
               {importNavigation.map((item) => (
                 <Link
@@ -192,7 +192,7 @@ export default function Navigation() {
                     'block pl-6 pr-4 py-2 border-l-4 text-base font-medium'
                   )}
                 >
-                  <span className="mr-2">{item.icon}</span>
+                  <item.icon className="mr-2 h-4 w-4" />
                   {item.name}
                 </Link>
               ))}
@@ -200,8 +200,9 @@ export default function Navigation() {
             
             {/* User section in mobile */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-              <div className="pl-3 pr-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                👤 User
+              <div className="pl-3 pr-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                <User className="mr-2 h-4 w-4" />
+                User
               </div>
               
               {/* Settings Link */}
@@ -214,7 +215,7 @@ export default function Navigation() {
                   'block pl-6 pr-4 py-2 border-l-4 text-base font-medium'
                 )}
               >
-                <span className="mr-2">⚙️</span>
+                <Settings className="mr-2 h-4 w-4" />
                 Settings
               </Link>
               
@@ -233,7 +234,7 @@ export default function Navigation() {
                     'w-full text-left block pl-9 pr-4 py-2 border-l-4 text-base font-medium'
                   )}
                 >
-                  <span className="mr-2">{themeOption.icon}</span>
+                  <themeOption.icon className="mr-2 h-4 w-4" />
                   {themeOption.label}
                   {theme === themeOption.value && (
                     <svg
