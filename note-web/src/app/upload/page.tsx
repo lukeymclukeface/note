@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { CheckCircle, XCircle, Music, FileText } from 'lucide-react';
 
 interface UploadResult {
   success: boolean;
@@ -173,7 +174,11 @@ export default function UploadPage() {
           }`}>
             <div className="flex items-center">
               <div className="mr-3">
-                {uploadResult.success ? '✅' : '❌'}
+                {uploadResult.success ? (
+                  <CheckCircle className="h-5 w-5" />
+                ) : (
+                  <XCircle className="h-5 w-5" />
+                )}
               </div>
               <div>
                 <p className="font-medium">{uploadResult.success ? 'Upload Successful!' : 'Upload Failed'}</p>
@@ -195,7 +200,7 @@ export default function UploadPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                🎵 Audio Files
+                <Music className="mr-2 h-4 w-4" /> Audio Files
               </h3>
               <div className="space-y-2">
                 {supportedTypes.audio.map(type => (
@@ -209,7 +214,7 @@ export default function UploadPage() {
             
             <div>
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                📄 Text Documents
+                <FileText className="mr-2 h-4 w-4" /> Text Documents
               </h3>
               <div className="space-y-2">
                 {supportedTypes.text.map(type => (

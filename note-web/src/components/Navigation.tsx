@@ -6,7 +6,7 @@ import { clsx } from 'clsx';
 import { useState, useRef, useEffect } from 'react';
 import { Home, FileText, Users, Briefcase, Calendar, Import, Mic, Upload, User, Settings, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
 import NavbarRecorder from './NavbarRecorder';
-import { UserDropdown } from './UserDropdown';
+import { UserDropdownMenu } from './UserDropdownMenu';
 import { useTheme } from '@/providers/ThemeProvider';
 
 const navigation = [
@@ -133,14 +133,14 @@ export default function Navigation() {
           {/* Right side: Secondary Navigation + Mobile Menu */}
           <div className="flex items-center">
 {/* Desktop User Menu */}
-            <div className="hidden sm:flex sm:space-x-8">
-              <UserDropdown />
+            <div className="hidden sm:flex sm:items-center sm:space-x-4">
               <NavbarRecorder />
+              <UserDropdownMenu />
             </div>
             
             {/* Mobile menu button */}
             <div className="sm:hidden flex items-center space-x-3">
-              <UserDropdown />
+              <UserDropdownMenu />
               <button
                 type="button"
                 className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"

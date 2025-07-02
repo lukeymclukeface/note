@@ -2,6 +2,7 @@ import { getMeetingById } from '@/lib/database';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { Music, Calendar, ClipboardList, FileText, Tags } from 'lucide-react';
 
 interface MeetingPageProps {
   params: Promise<{
@@ -65,11 +66,11 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
             <div className="flex items-center space-x-2 ml-4">
               {meeting.recording_id && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                  🎵 Recording Available
+                  <Music className="mr-1 h-4 w-4" /> Recording Available
                 </span>
               )}
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                📅 Meeting
+                <Calendar className="mr-1 h-4 w-4" /> Meeting
               </span>
             </div>
           </div>
@@ -121,8 +122,8 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
           {/* Summary Section */}
           {meeting.summary && (
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                📋 Meeting Summary
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <ClipboardList className="mr-2 h-6 w-6" /> Meeting Summary
               </h2>
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
                 <MarkdownRenderer content={meeting.summary} />
@@ -133,8 +134,8 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
           {/* Full Content Section */}
           {meeting.content && (
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                📄 Full Content
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <FileText className="mr-2 h-6 w-6" /> Full Content
               </h2>
               <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
                 <MarkdownRenderer content={meeting.content} />
@@ -145,8 +146,8 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
           {/* Tags Section */}
           {meeting.tags && (
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                🏷️ Tags
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <Tags className="mr-2 h-6 w-6" /> Tags
               </h2>
               <div className="flex flex-wrap gap-2">
                 {meeting.tags.split(',').map((tag, index) => (
@@ -178,7 +179,7 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
                   href={`/recordings/${meeting.recording_id}`}
                   className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
                 >
-                  🎵 View Recording
+                  <Music className="mr-1 h-4 w-4" /> View Recording
                 </Link>
               )}
             </div>

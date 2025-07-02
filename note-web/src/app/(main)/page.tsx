@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getDashboardStats, getRecentNotes, getRecentMeetings, getRecentInterviews, getRecentRecordings } from '@/lib/database';
 import NoteCard from '@/components/NoteCard';
 import MeetingCard from '@/components/MeetingCard';
+import { FileText, Users, Briefcase, Mic } from 'lucide-react';
 
 export default function Home() {
   const stats = getDashboardStats();
@@ -10,11 +11,11 @@ export default function Home() {
   const recentInterviews = getRecentInterviews(3);
   const recentRecordings = getRecentRecordings(3);
 
-  const StatCard = ({ title, value, description, icon, href }: {
+  const StatCard = ({ title, value, description, icon: Icon, href }: {
     title: string;
     value: number | string;
     description: string;
-    icon: string;
+    icon: React.ComponentType<{ className?: string }>;
     href: string;
   }) => (
     <Link href={href} className="group">
@@ -25,8 +26,8 @@ export default function Home() {
             <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
           </div>
-          <div className="text-3xl opacity-60 group-hover:opacity-100 transition-opacity">
-            {icon}
+          <div className="opacity-60 group-hover:opacity-100 transition-opacity">
+            <Icon className="h-8 w-8" />
           </div>
         </div>
       </div>
@@ -58,28 +59,28 @@ export default function Home() {
             title="Notes"
             value={stats.notes}
             description="Total notes created"
-            icon="📝"
+            icon={FileText}
             href="/notes"
           />
           <StatCard
             title="Meetings"
             value={stats.meetings}
             description="Meetings recorded"
-            icon="🤝"
+            icon={Users}
             href="/meetings"
           />
           <StatCard
             title="Interviews"
             value={stats.interviews}
             description="Interviews conducted"
-            icon="💼"
+            icon={Briefcase}
             href="/interviews"
           />
           <StatCard
             title="Audio Time"
             value={`${stats.totalDurationMinutes}m`}
             description="Total recorded"
-            icon="🎤"
+            icon={Mic}
             href="/recordings"
           />
         </div>
@@ -122,7 +123,7 @@ export default function Home() {
                         {interview.title}
                       </h3>
                       <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
-                        💼
+                        <Briefcase className="h-4 w-4" />
                       </span>
                     </div>
                     {interview.company && (
@@ -161,7 +162,7 @@ export default function Home() {
                           {recording.filename.replace(/\.[^/.]+$/, '')}
                         </h3>
                         <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
-                          🎤
+                          <Mic className="h-4 w-4" />
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">

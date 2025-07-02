@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Config, HealthCheck, COMMON_EDITORS, DATE_FORMATS } from './types';
+import { Loader2, Rocket, X } from 'lucide-react';
 
 export default function GeneralSettingsPage() {
   const [config, setConfig] = useState<Config | null>(null);
@@ -183,7 +184,9 @@ export default function GeneralSettingsPage() {
   if (isLoading) {
     return (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">⏳</div>
+        <div className="flex justify-center mb-4">
+          <Loader2 className="h-16 w-16 text-gray-400 animate-spin" />
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Loading Configuration</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
           Checking configuration file...
@@ -196,7 +199,9 @@ export default function GeneralSettingsPage() {
   if (!config && !configExists) {
     return (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">🚀</div>
+        <div className="flex justify-center mb-4">
+          <Rocket className="h-16 w-16 text-gray-400" />
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Welcome to Note AI</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
           Let&apos;s get you set up! The CLI configuration file doesn&apos;t exist yet.
@@ -247,7 +252,9 @@ export default function GeneralSettingsPage() {
   if (!config && configExists) {
     return (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">❌</div>
+        <div className="flex justify-center mb-4">
+          <X className="h-16 w-16 text-red-400" />
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Configuration Error</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
           Unable to read the configuration file. Please check if the CLI is set up correctly.

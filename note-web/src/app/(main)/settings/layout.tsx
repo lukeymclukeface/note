@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Settings, Bot, Database, FileText } from 'lucide-react';
 
 const settingsNavItems = [
-  { label: 'General', href: '/settings', icon: '⚙️' },
-  { label: 'AI Settings', href: '/settings/ai', icon: '🤖' },
-  { label: 'Database', href: '/settings/database', icon: '🗄️' },
-  { label: 'Raw Config', href: '/settings/raw', icon: '📄' },
+  { label: 'General', href: '/settings', icon: Settings },
+  { label: 'AI Settings', href: '/settings/ai', icon: Bot },
+  { label: 'Database', href: '/settings/database', icon: Database },
+  { label: 'Raw Config', href: '/settings/raw', icon: FileText },
 ];
 
 export default function SettingsLayout({
@@ -37,7 +38,7 @@ export default function SettingsLayout({
                         : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
-                    <span className="mr-3 text-lg">{item.icon}</span>
+                    <item.icon className="mr-3 h-5 w-5" />
                     {item.label}
                   </Link>
                 );

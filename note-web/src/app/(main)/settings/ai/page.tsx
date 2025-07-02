@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { X, AlertTriangle, Search } from 'lucide-react';
 import { Config, maskApiKey, AI_PROVIDERS, OPENAI_TRANSCRIPTION_MODELS, OPENAI_SUMMARY_MODELS, GOOGLE_TRANSCRIPTION_MODELS, GOOGLE_SUMMARY_MODELS, GOOGLE_LOCATIONS } from '../types';
 
 interface OpenAIValidationResult {
@@ -211,7 +212,9 @@ export default function AISettingsPage() {
   if (!config) {
     return (
       <div className="text-center py-12">
-        <div className="text-6xl mb-4">❌</div>
+        <div className="flex justify-center mb-4">
+          <X size={64} className="text-red-500" />
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Configuration Error</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
           Unable to read the configuration file. Please check if the CLI is set up.
@@ -253,7 +256,10 @@ export default function AISettingsPage() {
                   placeholder={isEditing ? "Enter your OpenAI API key" : ""}
                 />
                 {!formData.openai_key && (
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">⚠️ API key not configured</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center">
+                    <AlertTriangle size={12} className="mr-1" />
+                    API key not configured
+                  </p>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">OpenAI Platform</a>
@@ -277,7 +283,10 @@ export default function AISettingsPage() {
                           Validating...
                         </span>
                       ) : (
-                        '🔍 Validate API Key'
+                        <span className="flex items-center">
+                          <Search size={16} className="mr-2" />
+                          Validate API Key
+                        </span>
                       )}
                     </button>
                     
@@ -385,7 +394,10 @@ export default function AISettingsPage() {
                         Validating...
                       </span>
                     ) : (
-                      '🔍 Validate Google AI'
+                      <span className="flex items-center">
+                        <Search size={16} className="mr-2" />
+                        Validate Google AI
+                      </span>
                     )}
                   </button>
                   
