@@ -3,16 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
-import { Home, FileText, Users, Briefcase, Calendar, Import, Mic, Upload, User, Settings, Sun, Moon, Monitor, ChevronDown, Menu, Check } from 'lucide-react';
+import { Home, FileText, Users, Briefcase, Calendar, Import, User, Settings, Sun, Moon, Monitor, Menu, Check } from 'lucide-react';
 import NavbarRecorder from './NavbarRecorder';
 import { UserDropdownMenu } from './UserDropdownMenu';
 import { useTheme } from '@/providers/ThemeProvider';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
@@ -20,11 +14,7 @@ const navigation = [
   { name: 'Meetings', href: '/meetings', icon: Users },
   { name: 'Interviews', href: '/interviews', icon: Briefcase },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
-];
-
-const importNavigation = [
-  { name: 'Recordings', href: '/recordings', icon: Mic },
-  { name: 'Upload', href: '/upload', icon: Upload },
+  { name: 'Import', href: '/import', icon: Import },
 ];
 
 const themes = [
@@ -51,57 +41,26 @@ export default function Navigation() {
             
             {/* Navigation Links */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={clsx(
-                    pathname === item.href
-                      ? 'border-primary text-foreground'
-                      : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground',
-                    'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors'
-                  )}
-                >
-                  <item.icon className="mr-2 h-4 w-4" />
-                  {item.name}
-                </Link>
-              ))}
-              
-              {/* Import Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
+              {navigation.map((item) => {
+                const isActive = item.href === '/import' 
+                  ? pathname?.startsWith('/import') || pathname === '/recordings' || pathname === '/upload'
+                  : pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
                     className={clsx(
-                      importNavigation.some(item => pathname === item.href)
+                      isActive
                         ? 'border-primary text-foreground'
                         : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground',
-                      'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors'
+                      'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors'
                     )}
                   >
-                    <Import className="mr-1 h-4 w-4" />
-                    Import
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {importNavigation.map((item) => (
-                    <DropdownMenuItem key={item.name} asChild>
-                      <Link
-                        href={item.href}
-                        className={clsx(
-                          pathname === item.href
-                            ? 'bg-accent text-accent-foreground'
-                            : '',
-                          'flex items-center w-full'
-                        )}
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {item.name}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Link>
+                );
+              })}
             </div>
           </div>
           
@@ -132,44 +91,26 @@ export default function Navigation() {
         {/* Mobile menu */}
         <div className="sm:hidden" id="mobile-menu">
           <div className="pt-2 pb-3 space-y-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={clsx(
-                  pathname === item.href
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:bg-accent hover:border-border hover:text-foreground',
-                  'block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
-                )}
-              >
-                <item.icon className="mr-2 h-4 w-4" />
-                {item.name}
-              </Link>
-            ))}
-            
-            {/* Import section in mobile */}
-            <div className="border-t border-border pt-3 mt-3">
-              <div className="pl-3 pr-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center">
-                <Import className="mr-2 h-4 w-4" />
-                Import
-              </div>
-              {importNavigation.map((item) => (
+            {navigation.map((item) => {
+              const isActive = item.href === '/import' 
+                ? pathname?.startsWith('/import') || pathname === '/recordings' || pathname === '/upload'
+                : pathname === item.href;
+              return (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={clsx(
-                    pathname === item.href
+                    isActive
                       ? 'bg-primary/10 border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:bg-accent hover:border-border hover:text-foreground',
-                    'block pl-6 pr-4 py-2 border-l-4 text-base font-medium'
+                    'block pl-3 pr-4 py-2 border-l-4 text-base font-medium'
                   )}
                 >
                   <item.icon className="mr-2 h-4 w-4" />
                   {item.name}
                 </Link>
-              ))}
-            </div>
+              );
+            })}
             
             {/* User section in mobile */}
             <div className="border-t border-border pt-3">
