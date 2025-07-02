@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useThemes } from '@/lib/useThemes';
+import { themes, useThemes } from '@/lib/useThemes';
 
 export function ThemeSelector() {
-  const { theme, setTheme, themes } = useThemes();
+  const { theme, setTheme } = useThemes();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
