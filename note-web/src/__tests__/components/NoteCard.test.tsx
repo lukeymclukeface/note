@@ -89,8 +89,8 @@ describe('NoteCard', () => {
   it('applies correct CSS classes for styling', () => {
     const { container } = render(<NoteCard note={mockNote} />)
     
-    // Check main container has proper classes
+    // Check main container has proper shadcn/ui Card classes
     const cardElement = container.firstChild as HTMLElement
-    expect(cardElement).toHaveClass('bg-white', 'dark:bg-gray-800', 'border', 'rounded-lg')
+    expect(cardElement).toHaveClass('rounded-lg', 'border', 'bg-card', 'text-card-foreground', 'shadow-sm')
   })
 })

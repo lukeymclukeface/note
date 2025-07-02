@@ -87,6 +87,10 @@ export const mockConfig: AppConfig = {
   database_path: '/Users/test/.noteai/notes.db',
   transcription_model: 'whisper-1',
   summary_model: 'gpt-4',
+  google_project_id: 'test-project-id',
+  google_location: 'us-central1',
+  transcription_provider: 'openai',
+  summary_provider: 'openai',
 }
 
 export const mockConfigMissingKey: AppConfig = {
@@ -98,6 +102,10 @@ export const mockConfigMissingKey: AppConfig = {
   database_path: '/Users/test/.noteai/notes.db',
   transcription_model: 'whisper-1',
   summary_model: 'gpt-3.5-turbo',
+  google_project_id: '',
+  google_location: 'us-central1',
+  transcription_provider: 'openai',
+  summary_provider: 'openai',
 }
 
 // Arrays for list components

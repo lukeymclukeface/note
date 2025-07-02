@@ -17,36 +17,67 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    env:
+      # Prevent watchman warnings in CI
+      CI: true
+      # Ensure Jest runs in CI mode
+      NODE_ENV: test
+    
     steps:
     - uses: actions/checkout@v4
     
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
         cache-dependency-path: 'note-web/package-lock.json'
     
-    - name: Change to web directory
-      run: cd note-web
-      
+    - name: Validate project structure
+      working-directory: note-web
+      run: |
+        echo "Checking required files..."
+        test -f package.json || (echo "Missing package.json" && exit 1)
+        test -f jest.config.js || (echo "Missing jest.config.js" && exit 1)
+        test -f jest.setup.js || (echo "Missing jest.setup.js" && exit 1)
+        test -f tsconfig.json || (echo "Missing tsconfig.json" && exit 1)
+        echo "All required files found."
+    
     - name: Install dependencies
-      run: cd note-web && npm ci
+      working-directory: note-web
+      run: npm ci
+      
+    - name: Run TypeScript type checking
+      working-directory: note-web
+      run: npx tsc --noEmit
       
     - name: Run linting
-      run: cd note-web && npm run lint
+      working-directory: note-web
+      run: npm run lint
       
     - name: Run tests
-      run: cd note-web && npm test
+      working-directory: note-web
+      run: npm test -- --watchAll=false --verbose
       
     - name: Run tests with coverage
-      run: cd note-web && npm run test:coverage
+      working-directory: note-web
+      run: npm run test:coverage -- --watchAll=false
       
     - name: Upload coverage reports
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: web-coverage-report
         path: note-web/coverage/
+        retention-days: 30
         
     - name: Build application
-      run: cd note-web && npm run build
+      working-directory: note-web
+      run: npm run build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: web-build
+        path: note-web/.next/
+        retention-days: 7

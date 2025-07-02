@@ -119,15 +119,15 @@ describe('MeetingCard', () => {
   it('applies correct CSS classes for styling', () => {
     const { container } = render(<MeetingCard meeting={mockMeeting} />)
     
-    // Check main container has proper classes
+    // Check main container has proper shadcn/ui Card classes
     const cardElement = container.firstChild as HTMLElement
-    expect(cardElement).toHaveClass('bg-white', 'dark:bg-gray-800', 'rounded-lg', 'shadow-md')
+    expect(cardElement).toHaveClass('rounded-lg', 'border', 'bg-card', 'text-card-foreground', 'shadow-sm')
   })
   
   it('has proper hover states for title link', () => {
     render(<MeetingCard meeting={mockMeeting} />)
     
     const titleLink = screen.getByRole('link', { name: 'Weekly Team Standup' })
-    expect(titleLink).toHaveClass('hover:text-blue-600', 'dark:hover:text-blue-400')
+    expect(titleLink).toHaveClass('hover:text-primary', 'transition-colors')
   })
 })
