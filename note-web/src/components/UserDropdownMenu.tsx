@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTheme } from '@/providers/ThemeProvider';
-import { Settings, Sun, Moon, Monitor, ChevronDown, User } from 'lucide-react';
+import { Settings, Sun, Moon, Monitor, User } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -30,9 +31,12 @@ export function UserDropdownMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer">
-        <User className="text-lg" />
-        <ChevronDown className="ml-2 -mr-1 h-4 w-4" />
+      <DropdownMenuTrigger asChild>
+        <Avatar className="h-7 w-7 cursor-pointer hover:ring-2 hover:ring-ring hover:ring-offset-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+          <AvatarFallback className="bg-muted hover:bg-muted/80 transition-colors text-xs">
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
+          </AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>

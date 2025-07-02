@@ -3,6 +3,8 @@ import { getDashboardStats, getRecentNotes, getRecentMeetings, getRecentIntervie
 import NoteCard from '@/components/NoteCard';
 import MeetingCard from '@/components/MeetingCard';
 import { FileText, Users, Briefcase, Mic } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
   const stats = getDashboardStats();
@@ -19,36 +21,38 @@ export default function Home() {
     href: string;
   }) => (
     <Link href={href} className="group">
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-3xl font-bold">{value}</p>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+            <div className="opacity-60 group-hover:opacity-100 transition-opacity">
+              <Icon className="h-8 w-8 text-muted-foreground" />
+            </div>
           </div>
-          <div className="opacity-60 group-hover:opacity-100 transition-opacity">
-            <Icon className="h-8 w-8" />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </Link>
   );
 
   const SectionHeader = ({ title, href, count }: { title: string; href: string; count: number }) => (
     <div className="flex items-center justify-between mb-4">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{title}</h2>
-      <Link href={href} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+      <h2 className="text-xl font-semibold">{title}</h2>
+      <Link href={href} className="text-primary hover:text-primary/80 text-sm font-medium transition-colors">
         View all ({count})
       </Link>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-300">
+          <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">
             Welcome back! Here&apos;s an overview of your recent activity.
           </p>
         </header>
@@ -117,32 +121,37 @@ export default function Home() {
               <SectionHeader title="Recent Interviews" href="/interviews" count={stats.interviews} />
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {recentInterviews.map((interview) => (
-                  <div key={interview.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                        {interview.title}
-                      </h3>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
-                        <Briefcase className="h-4 w-4" />
-                      </span>
-                    </div>
-                    {interview.company && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        {interview.company} - {interview.position}
-                      </p>
-                    )}
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">
-                      {interview.interviewee} interviewed by {interview.interviewer}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-                      <span>{new Date(interview.created_at).toLocaleDateString()}</span>
-                      {interview.tags && (
-                        <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                          {interview.tags.split(',')[0]}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    <Card key={interview.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-lg truncate">
+                            {interview.title}
+                          </CardTitle>
+                          <Badge variant="outline" className="text-xs ml-2">
+                            <Briefcase className="h-3 w-3 mr-1" />
+                            Interview
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        {interview.company && (
+                          <p className="text-sm mb-2">
+                            {interview.company} - {interview.position}
+                          </p>
+                        )}
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {interview.interviewee} interviewed by {interview.interviewer}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{new Date(interview.created_at).toLocaleDateString()}</span>
+                          {interview.tags && (
+                            <Badge variant="secondary" className="text-xs">
+                              {interview.tags.split(',')[0]}
+                            </Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                 ))}
               </div>
             </section>
@@ -156,26 +165,33 @@ export default function Home() {
                 {recentRecordings.map((recording) => {
                   const durationMinutes = Math.round(recording.duration / (1000 * 1000 * 1000 * 60));
                   return (
-                    <div key={recording.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                          {recording.filename.replace(/\.[^/.]+$/, '')}
-                        </h3>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
-                          <Mic className="h-4 w-4" />
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        Duration: {durationMinutes} minutes
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                        Format: {recording.format} • {recording.sample_rate}Hz
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-                        <span>{new Date(recording.created_at).toLocaleDateString()}</span>
-                        <span>{Math.round(recording.file_size / 1024 / 1024)} MB</span>
-                      </div>
-                    </div>
+                    <Card key={recording.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-lg truncate">
+                            {recording.filename.replace(/\.[^/.]+$/, '')}
+                          </CardTitle>
+                          <Badge variant="outline" className="text-xs ml-2">
+                            <Mic className="h-3 w-3 mr-1" />
+                            Recording
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-sm mb-2">
+                          Duration: {durationMinutes} minutes
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Format: {recording.format} • {recording.sample_rate}Hz
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{new Date(recording.created_at).toLocaleDateString()}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {Math.round(recording.file_size / 1024 / 1024)} MB
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
@@ -184,20 +200,22 @@ export default function Home() {
 
           {/* Empty State */}
           {stats.notes === 0 && stats.meetings === 0 && stats.interviews === 0 && stats.recordings === 0 && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
-              <div className="text-gray-400 dark:text-gray-500 mb-4">
-                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Welcome to Note AI</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                Get started by creating your first note using the CLI:
-              </p>
-              <code className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded font-mono text-sm">
-                note import /path/to/your/audio/file.mp3
-              </code>
-            </div>
+            <Card className="p-8 text-center">
+              <CardContent>
+                <div className="text-muted-foreground mb-4">
+                  <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium mb-2">Welcome to Note AI</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get started by creating your first note using the CLI:
+                </p>
+                <code className="bg-secondary text-secondary-foreground px-3 py-1 rounded font-mono text-sm">
+                  note import /path/to/your/audio/file.mp3
+                </code>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

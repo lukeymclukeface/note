@@ -19,12 +19,12 @@ export default function SettingsLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <div className="flex">
         {/* Left Sidebar */}
-        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-screen">
+        <div className="w-64 bg-card border-r border-border min-h-screen">
           <div className="p-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
+            <h1 className="text-2xl font-bold mb-6">Settings</h1>
             <nav className="space-y-1">
               {settingsNavItems.map((item) => {
                 const isActive = pathname === item.href;
@@ -34,8 +34,8 @@ export default function SettingsLayout({
                     href={item.href}
                     className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                       isActive
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     }`}
                   >
                     <item.icon className="mr-3 h-5 w-5" />

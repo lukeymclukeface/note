@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function CliSetupPage() {
   const [isChecking, setIsChecking] = useState(false);
@@ -33,74 +35,81 @@ export default function CliSetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 shadow-lg">
-          <div className="text-center mb-6">
+        <Card className="p-8 shadow-lg">
+          <CardHeader className="text-center">
             <div className="text-6xl mb-4">🛠️</div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <CardTitle className="text-3xl mb-2">
               Note CLI Required
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300">
+            </CardTitle>
+            <p className="text-muted-foreground">
               The Note AI CLI is not installed or not available in your PATH. 
               Please install it to use this application.
             </p>
-          </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
 
-          <div className="space-y-6">
             {/* Installation Instructions */}
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Installation Instructions
-              </h2>
-              
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">
-                    Option 1: Install from Source
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                    Clone the repository and build the CLI:
-                  </p>
-                  <div className="bg-gray-800 dark:bg-gray-700 rounded-md p-3 font-mono text-sm text-green-400 overflow-x-auto">
-                    <div>git clone https://github.com/your-repo/note-ai.git</div>
-                    <div>cd note-ai</div>
-                    <div>make install</div>
-                  </div>
-                </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">
+                  Installation Instructions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card className="border-l-4 border-primary bg-primary/5">
+                  <CardContent className="pt-4">
+                    <h3 className="font-medium mb-2">
+                      Option 1: Install from Source
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Clone the repository and build the CLI:
+                    </p>
+                    <Card className="bg-secondary p-3 font-mono text-sm overflow-x-auto">
+                      <div>git clone https://github.com/your-repo/note-ai.git</div>
+                      <div>cd note-ai</div>
+                      <div>make install</div>
+                    </Card>
+                  </CardContent>
+                </Card>
                 
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">
-                    Option 2: Add to PATH
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                    If you&apos;ve already built the CLI, make sure it&apos;s in your PATH:
-                  </p>
-                  <div className="bg-gray-800 dark:bg-gray-700 rounded-md p-3 font-mono text-sm text-green-400 overflow-x-auto">
-                    <div>export PATH=$PATH:/path/to/note-cli</div>
-                  </div>
-                </div>
+                <Card className="border-l-4 border-primary bg-primary/5">
+                  <CardContent className="pt-4">
+                    <h3 className="font-medium mb-2">
+                      Option 2: Add to PATH
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      If you&apos;ve already built the CLI, make sure it&apos;s in your PATH:
+                    </p>
+                    <Card className="bg-secondary p-3 font-mono text-sm overflow-x-auto">
+                      <div>export PATH=$PATH:/path/to/note-cli</div>
+                    </Card>
+                  </CardContent>
+                </Card>
                 
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">
-                    Verify Installation
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                    Test that the CLI is working:
-                  </p>
-                  <div className="bg-gray-800 dark:bg-gray-700 rounded-md p-3 font-mono text-sm text-green-400 overflow-x-auto">
-                    <div>note --version</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                <Card className="border-l-4 border-primary bg-primary/5">
+                  <CardContent className="pt-4">
+                    <h3 className="font-medium mb-2">
+                      Verify Installation
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Test that the CLI is working:
+                    </p>
+                    <Card className="bg-secondary p-3 font-mono text-sm overflow-x-auto">
+                      <div>note --version</div>
+                    </Card>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
+              <Button
                 onClick={checkCliAvailability}
                 disabled={isChecking}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
+                className="flex items-center justify-center space-x-2"
               >
                 {isChecking ? (
                   <>
@@ -118,25 +127,25 @@ export default function CliSetupPage() {
                     <span>Check Again</span>
                   </>
                 )}
-              </button>
+              </Button>
               
-              <button
+              <Button
                 onClick={continueToApp}
-                className="px-6 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md font-medium transition-colors duration-200"
+                variant="outline"
               >
                 Continue Anyway
-              </button>
+              </Button>
             </div>
 
             {/* Help Text */}
-            <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-center text-sm text-muted-foreground">
               <p>
                 Need help? Check the{' '}
                 <a 
                   href="https://github.com/your-repo/note-ai#installation" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   installation documentation
                 </a>
@@ -145,14 +154,14 @@ export default function CliSetupPage() {
                   href="https://github.com/your-repo/note-ai/issues" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-primary hover:underline"
                 >
                   open an issue
                 </a>.
               </p>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

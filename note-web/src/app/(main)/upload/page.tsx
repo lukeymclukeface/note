@@ -2,6 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { CheckCircle, XCircle, Music, FileText } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface UploadResult {
   success: boolean;
@@ -101,22 +103,22 @@ export default function UploadPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Upload Files</h1>
-          <p className="text-gray-600 dark:text-gray-300">
+          <h1 className="text-4xl font-bold mb-2">Upload Files</h1>
+          <p className="text-muted-foreground">
             Upload audio files or text documents to import into Note AI
           </p>
         </header>
 
         {/* Upload Area */}
         <div className="mb-8">
-          <div
-            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          <Card
+            className={`relative border-2 border-dashed p-8 text-center transition-colors cursor-pointer ${
               isDragging
-                ? 'border-blue-400 bg-blue-50 dark:bg-blue-950 dark:border-blue-500'
-                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                ? 'border-primary bg-primary/5'
+                : 'border-border hover:border-primary/50'
             } ${
               isUploading ? 'opacity-50 pointer-events-none' : ''
             }`}
@@ -146,31 +148,31 @@ export default function UploadPage() {
                 </>
               ) : (
                 <>
-                  <div className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500">
+                  <div className="mx-auto h-16 w-16 text-muted-foreground">
                     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-lg text-gray-600 dark:text-gray-300">
-                      <span className="font-medium text-blue-600 dark:text-blue-400">Click to upload</span> or drag and drop
+                    <p className="text-lg">
+                      <span className="font-medium text-primary">Click to upload</span> or drag and drop
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       Maximum file size: 16GB
                     </p>
                   </div>
                 </>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Upload Result */}
         {uploadResult && (
-          <div className={`mb-8 p-4 rounded-lg ${
+          <Alert className={`mb-8 ${
             uploadResult.success 
-              ? 'bg-green-50 dark:bg-green-900 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-700'
-              : 'bg-red-50 dark:bg-red-900 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-700'
+              ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
+              : 'border-destructive bg-destructive/10 text-destructive'
           }`}>
             <div className="flex items-center">
               <div className="mr-3">
@@ -181,65 +183,74 @@ export default function UploadPage() {
                 )}
               </div>
               <div>
-                <p className="font-medium">{uploadResult.success ? 'Upload Successful!' : 'Upload Failed'}</p>
-                <p className="text-sm mt-1">{uploadResult.message}</p>
+                <AlertDescription className="font-medium">
+                  {uploadResult.success ? 'Upload Successful!' : 'Upload Failed'}
+                </AlertDescription>
+                <AlertDescription className="text-sm mt-1">
+                  {uploadResult.message}
+                </AlertDescription>
                 {uploadResult.success && uploadResult.filename && (
-                  <p className="text-sm mt-2">
-                    File saved as: <code className="bg-white dark:bg-gray-800 px-2 py-1 rounded text-xs">{uploadResult.filename}</code>
-                  </p>
+                  <AlertDescription className="text-sm mt-2">
+                    File saved as: <code className="bg-secondary px-2 py-1 rounded text-xs">{uploadResult.filename}</code>
+                  </AlertDescription>
                 )}
               </div>
             </div>
-          </div>
+          </Alert>
         )}
 
         {/* Supported File Types */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Supported File Types</h2>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                <Music className="mr-2 h-4 w-4" /> Audio Files
-              </h3>
-              <div className="space-y-2">
-                {supportedTypes.audio.map(type => (
-                  <div key={type} className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <span className="w-12 text-gray-500 dark:text-gray-500">{type}</span>
-                    <span>Audio recording</span>
-                  </div>
-                ))}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg">Supported File Types</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium mb-3 flex items-center">
+                  <Music className="mr-2 h-4 w-4" /> Audio Files
+                </h3>
+                <div className="space-y-2">
+                  {supportedTypes.audio.map(type => (
+                    <div key={type} className="flex items-center text-sm text-muted-foreground">
+                      <span className="w-12 text-muted-foreground">{type}</span>
+                      <span>Audio recording</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium mb-3 flex items-center">
+                  <FileText className="mr-2 h-4 w-4" /> Text Documents
+                </h3>
+                <div className="space-y-2">
+                  {supportedTypes.text.map(type => (
+                    <div key={type} className="flex items-center text-sm text-muted-foreground">
+                      <span className="w-12 text-muted-foreground">{type}</span>
+                      <span>Text document</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                <FileText className="mr-2 h-4 w-4" /> Text Documents
-              </h3>
-              <div className="space-y-2">
-                {supportedTypes.text.map(type => (
-                  <div key={type} className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <span className="w-12 text-gray-500 dark:text-gray-500">{type}</span>
-                    <span>Text document</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Next Steps */}
-        <div className="mt-8 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">What happens next?</h2>
-          <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-            <p>1. Your file will be saved to <code className="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">~/.noteai/import/</code></p>
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg text-primary">What happens next?</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-2">
+            <p>1. Your file will be saved to <code className="bg-secondary px-2 py-1 rounded">~/.noteai/import/</code></p>
             <p>2. Use the CLI to process the uploaded file:</p>
-            <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded mt-2">
-              <code className="text-blue-900 dark:text-blue-100">note import ~/.noteai/import/your-file-name</code>
-            </div>
+            <Card className="bg-secondary p-3 mt-2">
+              <code className="text-foreground">note import ~/.noteai/import/your-file-name</code>
+            </Card>
             <p>3. The processed content will appear in your notes, meetings, or interviews</p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

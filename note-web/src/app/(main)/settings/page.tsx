@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Config, HealthCheck, COMMON_EDITORS, DATE_FORMATS } from './types';
 import { Loader2, Rocket, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function GeneralSettingsPage() {
   const [config, setConfig] = useState<Config | null>(null);
@@ -236,12 +238,11 @@ export default function GeneralSettingsPage() {
           </div>
           
           <div className="mt-6 flex justify-center">
-            <button 
-              onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors duration-200"
+            <Button 
+              onClick={() => window.location.reload()}
             >
               Refresh Page
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -259,12 +260,11 @@ export default function GeneralSettingsPage() {
         <p className="text-gray-600 dark:text-gray-300 mb-8">
           Unable to read the configuration file. Please check if the CLI is set up correctly.
         </p>
-        <button 
-          onClick={loadConfig} 
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors duration-200"
+        <Button 
+          onClick={loadConfig}
         >
           Try Again
-        </button>
+        </Button>
       </div>
     );
   }
@@ -280,9 +280,9 @@ export default function GeneralSettingsPage() {
       </div>
 
         {message && (
-          <div className={`alert mt-4 mb-6 ${message.type === 'success' ? 'alert-success' : 'alert-error'}`}>
-            {message.text}
-          </div>
+          <Alert className="mt-4 mb-6">
+            <AlertDescription>{message.text}</AlertDescription>
+          </Alert>
         )}
 
         <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
@@ -352,9 +352,9 @@ export default function GeneralSettingsPage() {
                             placeholder="Add a tag"
                             onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
                           />
-                          <button type="button" className="btn btn-sm btn-secondary" onClick={handleAddTag}>
+                          <Button type="button" size="sm" variant="secondary" onClick={handleAddTag}>
                             Add
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     ) : formData.default_tags && formData.default_tags.length > 0 ? (
@@ -440,10 +440,11 @@ export default function GeneralSettingsPage() {
               <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">System Dependencies</h3>
-                  <button
+                  <Button
                     type="button"
                     onClick={loadSystemHealth}
-                    className="btn btn-sm btn-outline"
+                    size="sm"
+                    variant="outline"
                     disabled={isLoadingHealth}
                   >
                     {isLoadingHealth ? (
@@ -457,7 +458,7 @@ export default function GeneralSettingsPage() {
                     ) : (
                       'Refresh'
                     )}
-                  </button>
+                  </Button>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -562,17 +563,17 @@ export default function GeneralSettingsPage() {
           <div className="flex justify-end mt-6 space-x-4">
             {isEditing ? (
               <>
-                <button type="button" className="btn btn-outline" onClick={handleCancel}>
+                <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancel
-                </button>
-                <button type="submit" className={`btn btn-success ${isSaving ? 'loading' : ''}`} disabled={isSaving}>
-                  Save Changes
-                </button>
+                </Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
               </>
             ) : (
-              <button type="button" className="btn btn-primary" onClick={() => setIsEditing(true)}>
+              <Button type="button" onClick={() => setIsEditing(true)}>
                 Edit Settings
-              </button>
+              </Button>
             )}
           </div>
         </form>

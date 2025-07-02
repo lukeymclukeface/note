@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react';
 import { loadRecordings } from '@/lib/actions/recordings';
 import { formatTime, formatDuration } from '@/lib/dateUtils';
 import type { Recording } from '@/lib/database';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function RecordingsPage() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
@@ -76,11 +87,11 @@ export default function RecordingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Audio Recordings</h1>
-          <p className="text-gray-600 dark:text-gray-300">
+          <h1 className="text-4xl font-bold mb-2">Audio Recordings</h1>
+          <p className="text-muted-foreground">
             {recordings.length === 0 
               ? 'No recordings found. Use the record button in the navigation bar to start recording.' 
               : `${recordings.length} recording${recordings.length !== 1 ? 's' : ''} found`
@@ -89,48 +100,44 @@ export default function RecordingsPage() {
         </header>
 
         {isLoading ? (
-          <div className="text-center py-4">
-            <span className="text-gray-500 dark:text-gray-400">Loading recordings...</span>
-          </div>
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </CardContent>
+          </Card>
         ) : recordings.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
-            <div className="text-gray-400 dark:text-gray-500 mb-4">
-              <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No recordings yet</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              Get started by clicking the record button in the navigation bar.
-            </p>
-          </div>
+          <Card className="p-8 text-center">
+            <CardContent>
+              <div className="text-muted-foreground mb-4">
+                <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2">No recordings yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Get started by clicking the record button in the navigation bar.
+              </p>
+            </CardContent>
+          </Card>
         ) : (
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Recording
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Start Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Duration
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Format
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Size
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Quality
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Recording</TableHead>
+                    <TableHead>Start Time</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Format</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Quality</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {recordings.map((recording) => {
                     // Convert nanoseconds to seconds, then to minutes
                     const durationSeconds = recording.duration / (1000 * 1000 * 1000);
@@ -139,58 +146,58 @@ export default function RecordingsPage() {
                     const endTime = new Date(recording.end_time);
                     
                     return (
-                      <tr key={recording.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                      <TableRow key={recording.id}>
+                        <TableCell>
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-8 w-8">
-                              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                                <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                                 </svg>
                               </div>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                <a href={`/recordings/${recording.id}`} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">
+                              <div className="text-sm font-medium">
+                                <a href={`/recordings/${recording.id}`} className="text-primary hover:text-primary/80 hover:underline">
                                   {recording.filename.replace(/\.[^/.]+$/, '')}
                                 </a>
                               </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                              <div className="text-sm text-muted-foreground">
                                 ID: {recording.id}
                               </div>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
                             {formatDate(recording.start_time)}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-sm text-muted-foreground">
                             {formatTime(startTime)} - {formatTime(endTime)}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
                             {formatDuration(durationMinutes)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
                           {recording.format.toUpperCase()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        </TableCell>
+                        <TableCell className="text-sm">
                           {formatFileSize(recording.file_size)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
                           <div>{recording.sample_rate / 1000}kHz</div>
                           <div>{recording.channels} ch</div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
