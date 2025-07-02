@@ -52,9 +52,9 @@ describe('Navigation', () => {
     expect(calendarLinks).toHaveLength(2)
     expect(calendarLinks[0]).toHaveAttribute('href', '/calendar')
     
-    // Check secondary navigation
+    // Check secondary navigation - now consolidated in UserDropdown
     const settingsLinks = screen.getAllByRole('link', { name: /Settings/ })
-    expect(settingsLinks).toHaveLength(2)
+    expect(settingsLinks).toHaveLength(1) // Only in mobile menu, desktop is in UserDropdown
     expect(settingsLinks[0]).toHaveAttribute('href', '/settings')
   })
 
@@ -71,7 +71,8 @@ describe('Navigation', () => {
     expect(screen.getAllByText('📥')).toHaveLength(1) // Import dropdown icon (only in desktop)
     expect(screen.getAllByText('🎤')).toHaveLength(1) // Recordings (only in mobile, dropdown hidden by default)
     expect(screen.getAllByText('📤')).toHaveLength(1) // Upload (only in mobile, dropdown hidden by default)
-    expect(screen.getAllByText('⚙️')).toHaveLength(2) // Settings
+    expect(screen.getAllByText('⚙️')).toHaveLength(1) // Settings (consolidated in UserDropdown)
+    expect(screen.getAllByText('👤')).toHaveLength(2) // User icon (desktop and mobile)
   })
 
   it('highlights active navigation item', () => {
@@ -94,12 +95,12 @@ describe('Navigation', () => {
     expect(meetingsLinks[0]).toHaveClass('border-transparent')
   })
 
-  it('renders theme selector', () => {
+  it('renders user dropdown', () => {
     mockUsePathname.mockReturnValue('/')
     render(<NavigationWrapper />)
     
-    // Should have theme selectors for both desktop and mobile
-    expect(screen.getAllByTestId('theme-selector')).toHaveLength(2)
+    // Should have user dropdowns for both desktop and mobile
+    expect(screen.getAllByText('👤')).toHaveLength(2) // User icon in both desktop and mobile
   })
 
   it('has proper dark mode classes', () => {
@@ -129,12 +130,12 @@ describe('Navigation', () => {
     expect(mobileMenu).toBeInTheDocument()
   })
 
-  it('includes theme selector in mobile view', () => {
+  it('includes user dropdown in mobile view', () => {
     mockUsePathname.mockReturnValue('/')
     render(<NavigationWrapper />)
     
-    // Should have theme selector for both desktop and mobile
-    expect(screen.getAllByTestId('theme-selector')).toHaveLength(2)
+    // Should have user dropdown for both desktop and mobile
+    expect(screen.getAllByText('👤')).toHaveLength(2) // User icon in both views
   })
 
   it('applies correct responsive classes', () => {
@@ -163,11 +164,11 @@ describe('Navigation', () => {
     expect(screen.getAllByRole('link', { name: /Calendar/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Recordings/ })).toHaveLength(1) // Only in mobile (desktop is in dropdown)
     expect(screen.getAllByRole('link', { name: /Upload/ })).toHaveLength(1) // Only in mobile (desktop is in dropdown)
-    expect(screen.getAllByRole('link', { name: /Settings/ })).toHaveLength(2)
+    expect(screen.getAllByRole('link', { name: /Settings/ })).toHaveLength(1) // Only in mobile (desktop is in UserDropdown)
     
     // Check that mobile menu elements are present
     expect(screen.getByRole('button', { name: /Open main menu/ })).toBeInTheDocument()
-    expect(screen.getAllByTestId('theme-selector')).toHaveLength(2)
+    expect(screen.getAllByText('👤')).toHaveLength(2) // User dropdown in both desktop and mobile
   })
 
   it('has proper accessibility attributes', () => {
