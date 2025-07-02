@@ -35,6 +35,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
     
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg build-essential
+        
     - name: Download dependencies
       working-directory: note-cli
       run: go mod download
@@ -43,9 +48,46 @@ jobs:
       working-directory: note-cli
       run: go mod verify
       
+    - name: Verify FFmpeg installation
+      run: |
+        ffmpeg -version
+        ffprobe -version
+        
+    - name: Build application
+      working-directory: note-cli
+      run: go build -o note cmd/note/main.go
+      
+    - name: Set environment variables
+      run: |
+        echo "CGO_ENABLED=1" >> $GITHUB_ENV
+        echo "HOME=/home/runner" >> $GITHUB_ENV
+        
+    - name: Setup test environment
+      run: |
+        mkdir -p /home/runner/.noteai
+        mkdir -p /home/runner/.noteai/.cache
+        mkdir -p /home/runner/.noteai/notes
+        mkdir -p /home/runner/.noteai/meetings
+        mkdir -p /home/runner/.noteai/interviews
+        mkdir -p /home/runner/.noteai/recordings
+        chmod -R 755 /home/runner/.noteai
+        
+    - name: Debug environment
+      run: |
+        echo "Go version:"
+        go version
+        echo "Go environment:"
+        go env
+        echo "FFmpeg version:"
+        ffmpeg -version | head -5
+        echo "Current user and home:"
+        whoami
+        echo $HOME
+        ls -la $HOME/.noteai/ || echo "No .noteai directory yet"
+        
     - name: Run tests
       working-directory: note-cli
-      run: go test -v ./...
+      run: go test -v -timeout 5m ./...
       
     - name: Run tests with coverage
       working-directory: note-cli
