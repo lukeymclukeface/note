@@ -40,14 +40,8 @@ describe('Navigation', () => {
     expect(notesLinks).toHaveLength(2) // desktop and mobile
     expect(notesLinks[0]).toHaveAttribute('href', '/notes')
     
-    const meetingsLinks = screen.getAllByRole('link', { name: /Meetings/ })
-    expect(meetingsLinks).toHaveLength(2)
-    expect(meetingsLinks[0]).toHaveAttribute('href', '/meetings')
-    
-    const interviewsLinks = screen.getAllByRole('link', { name: /Interviews/ })
-    expect(interviewsLinks).toHaveLength(2)
-    expect(interviewsLinks[0]).toHaveAttribute('href', '/interviews')
-    
+    // const meetingsLinks = screen.getAllByRole('link', { name: /Meetings/ })
+    // const interviewsLinks = screen.getAllByRole('link', { name: /Interviews/ })
     const calendarLinks = screen.getAllByRole('link', { name: /Calendar/ })
     expect(calendarLinks).toHaveLength(2)
     expect(calendarLinks[0]).toHaveAttribute('href', '/calendar')
@@ -70,8 +64,8 @@ describe('Navigation', () => {
     // Check for lucide-react icons (should appear in both desktop and mobile)
     expect(screen.getAllByRole('link', { name: /Dashboard/ })).toHaveLength(2) // Dashboard
     expect(screen.getAllByRole('link', { name: /Notes/ })).toHaveLength(2) // Notes
-    expect(screen.getAllByRole('link', { name: /Meetings/ })).toHaveLength(2) // Meetings
-    expect(screen.getAllByRole('link', { name: /Interviews/ })).toHaveLength(2) // Interviews
+    // expect(screen.getAllByRole('link', { name: /Meetings/ })).toHaveLength(2) // Meetings
+    // expect(screen.getAllByRole('link', { name: /Interviews/ })).toHaveLength(2) // Interviews
     expect(screen.getAllByRole('link', { name: /Calendar/ })).toHaveLength(2) // Calendar
     expect(screen.getAllByRole('link', { name: /Import/ })).toHaveLength(2) // Import is now a direct link
     expect(screen.getAllByRole('link', { name: /Settings/ })).toHaveLength(1) // Settings (only in mobile)
@@ -92,9 +86,10 @@ describe('Navigation', () => {
     mockUsePathname.mockReturnValue('/')
     render(<NavigationWrapper />)
     
-    const meetingsLinks = screen.getAllByRole('link', { name: /Meetings/ })
+    // Test that Notes links (which we do have) are inactive when Dashboard is active
+    const notesLinks = screen.getAllByRole('link', { name: /Notes/ })
     // First one is desktop, should have inactive classes
-    expect(meetingsLinks[0]).toHaveClass('border-transparent')
+    expect(notesLinks[0]).toHaveClass('border-transparent')
   })
 
   it('renders user avatar', () => {
@@ -166,8 +161,8 @@ describe('Navigation', () => {
     // Check that all navigation items are present
     expect(screen.getAllByRole('link', { name: /Dashboard/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Notes/ })).toHaveLength(2)
-    expect(screen.getAllByRole('link', { name: /Meetings/ })).toHaveLength(2)
-    expect(screen.getAllByRole('link', { name: /Interviews/ })).toHaveLength(2)
+    // expect(screen.getAllByRole('link', { name: /Meetings/ })).toHaveLength(2)
+    // expect(screen.getAllByRole('link', { name: /Interviews/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Calendar/ })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: /Import/ })).toHaveLength(2) // Import is now a direct link in both desktop and mobile
     expect(screen.getAllByRole('link', { name: /Settings/ })).toHaveLength(1) // Only in mobile

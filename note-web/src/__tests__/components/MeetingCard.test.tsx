@@ -10,7 +10,7 @@ describe('MeetingCard', () => {
     // Check title (should be a link)
     const titleLink = screen.getByRole('link', { name: 'Weekly Team Standup' })
     expect(titleLink).toBeInTheDocument()
-    expect(titleLink).toHaveAttribute('href', '/meetings/1')
+    expect(titleLink).toHaveAttribute('href', '/notes/meetings/1')
     
     // Check meeting date
     expect(screen.getByText('Meeting Date:')).toBeInTheDocument()
