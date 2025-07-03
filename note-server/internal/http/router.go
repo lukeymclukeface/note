@@ -10,6 +10,11 @@ import (
 
 // NewRouter creates a new HTTP router with all routes configured
 func NewRouter(transcribeHub *ws.TranscribeHub) http.Handler {
+	return NewRouterWithHandlers(transcribeHub, NewHandlers())
+}
+
+// NewRouterWithHandlers creates a new HTTP router with injected handlers for testing
+func NewRouterWithHandlers(transcribeHub *ws.TranscribeHub, handlers *Handlers) http.Handler {
 	r := chi.NewRouter()
 	
 	// Middleware
@@ -17,9 +22,6 @@ func NewRouter(transcribeHub *ws.TranscribeHub) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	
-	// Initialize handlers with dependencies
-	handlers := NewHandlers()
 	
 	// Health check endpoint
 	r.Get("/healthz", handlers.HealthHandler)

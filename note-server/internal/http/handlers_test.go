@@ -59,10 +59,7 @@ func createHandlersWithMocks(transcriber service.Transcriber, summarizer service
 	transcribeService := service.NewTranscribeServiceWithTranscriber(transcriber)
 	summarizeService := service.NewSummarizeServiceWithSummarizer(summarizer, 50)
 	
-	return &Handlers{
-		transcribeService: transcribeService,
-		summarizeService:  summarizeService,
-	}
+	return NewHandlersWithServices(transcribeService, summarizeService)
 }
 
 func TestHealthHandler(t *testing.T) {

@@ -31,6 +31,15 @@ func NewHandlers() *Handlers {
 	}
 }
 
+// NewHandlersWithServices creates handlers with injected services for testing
+func NewHandlersWithServices(transcribeService *service.TranscribeService, summarizeService *service.SummarizeService) *Handlers {
+	return &Handlers{
+		transcribeService: transcribeService,
+		summarizeService:  summarizeService,
+		configManager:     config.GetManager(),
+	}
+}
+
 // HealthHandler responds with the server's health status
 func (h *Handlers) HealthHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

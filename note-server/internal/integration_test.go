@@ -80,6 +80,12 @@ func TestIntegrationHTTPHandlers(t *testing.T) {
 	})
 	
 	t.Run("summarize endpoint integration", func(t *testing.T) {
+		// Create services with mock implementations for this test
+		summarizer := &IntegrationMockSummarizer{}
+		summarizeService := service.NewSummarizeServiceWithSummarizer(summarizer, 10)
+		handlers := httpPkg.NewHandlersWithServices(transcribeService, summarizeService)
+		router := httpPkg.NewRouterWithHandlers(transcribeHub, handlers)
+		
 		requestBody := map[string]string{
 			"text": "This is a long text that needs to be summarized for integration testing purposes.",
 		}

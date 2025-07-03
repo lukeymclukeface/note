@@ -118,13 +118,16 @@ func TestTranscribeService_TranscribeAudio(t *testing.T) {
 		service := NewTranscribeServiceWithTranscriber(mockTranscriber)
 		ctx := context.Background()
 
-		// Note: This will fail because convertToWav tries to use ffmpeg
-		// In a real test environment, you'd mock the convertToWav function
-		_, err := service.TranscribeAudio(ctx, []byte("fake audio"))
+		// Mock transcribers should skip ffmpeg conversion and work correctly
+		result, err := service.TranscribeAudio(ctx, []byte("fake audio"))
 		
-		// We expect this to fail due to ffmpeg dependency
-		if err == nil {
-			t.Error("Expected error due to missing ffmpeg, but got nil")
+		// We expect this to succeed with the mock
+		if err != nil {
+			t.Errorf("Expected success with mock transcriber, but got error: %v", err)
+		}
+		
+		if result != "mocked transcription" {
+			t.Errorf("Expected 'mocked transcription', got '%s'", result)
 		}
 	})
 
