@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { loadRecordings } from '@/lib/actions/recordings';
 import { formatTime, formatDuration } from '@/lib/dateUtils';
 import type { Recording } from '@/lib/database';
@@ -154,9 +155,9 @@ export default function ImportPage() {
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium">
-                              <a href={`/recordings/${recording.id}`} className="text-primary hover:text-primary/80 hover:underline">
+                              <Link href={`/import/recordings/${recording.id}`} className="text-primary hover:text-primary/80 hover:underline">
                                 {recording.filename.replace(/\.[^/.]+$/, '')}
-                              </a>
+                              </Link>
                             </div>
                             <div className="text-sm text-muted-foreground">
                               ID: {recording.id}

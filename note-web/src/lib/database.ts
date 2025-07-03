@@ -327,6 +327,25 @@ export function getMeetingById(id: number): Meeting | null {
   }
 }
 
+// Get a single recording by ID
+export function getRecordingById(id: number): Recording | null {
+  try {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT id, filename, file_path, start_time, end_time, duration, 
+             file_size, format, sample_rate, channels, created_at 
+      FROM recordings 
+      WHERE id = ?
+    `);
+    const recording = stmt.get(id) as Recording | undefined;
+    db.close();
+    return recording || null;
+  } catch (error) {
+    console.error('Error fetching recording by ID:', error);
+    return null;
+  }
+}
+
 // Get all recordings from the database
 export function getAllRecordings(): Recording[] {
   try {
