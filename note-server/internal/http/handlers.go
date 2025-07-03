@@ -179,7 +179,7 @@ func (h *Handlers) GetConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appConfig := h.configManager.GetConfig()
-	
+
 	// Mask the OpenAI key for security
 	if appConfig.OpenAIKey != "" {
 		if len(appConfig.OpenAIKey) > 8 {
