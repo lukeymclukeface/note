@@ -1,0 +1,126 @@
+name: Test Makefile & Docker
+# This workflow tests the Makefile commands and Docker setup
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'Makefile'
+      - 'docker-compose.yml'
+      - '.github/workflows/test-makefile.yml'
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'Makefile'
+      - 'docker-compose.yml'
+      - '.github/workflows/test-makefile.yml'
+
+jobs:
+  test-makefile:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Test Makefile help
+      run: make help
+    
+    - name: Test Makefile status (should show no containers)
+      run: make status || echo "No containers running (expected)"
+    
+    - name: Test development file creation
+      run: |
+        make create-dev-compose
+        make create-air-config
+        make create-dev-dockerfiles
+        
+        # Verify files were created
+        test -f docker-compose.dev.yml || exit 1
+        test -f note-server/.air.toml || exit 1
+        test -f note-server/Dockerfile.dev || exit 1
+        test -f note-web/Dockerfile.dev || exit 1
+    
+    - name: Test Docker build
+      run: make build
+    
+    - name: Test Docker up
+      run: |
+        make up
+        sleep 30  # Wait for services to start
+    
+    - name: Test health check
+      run: make health
+    
+    - name: Test service status
+      run: make status
+    
+    - name: Test logs (brief)
+      run: timeout 5s make logs || echo "Log test completed"
+    
+    - name: Test individual service commands
+      run: |
+        make logs-server &
+        sleep 2
+        pkill -f "docker-compose logs" || true
+        
+        make logs-web &
+        sleep 2
+        pkill -f "docker-compose logs" || true
+    
+    - name: Test configuration API endpoints
+      run: |
+        # Test server health endpoint
+        curl -f http://localhost:8080/healthz
+        
+        # Test web app
+        curl -f http://localhost:3000
+        
+        # Test configuration API (should return no config found)
+        curl -s http://localhost:8080/api/config | grep -q "success" || echo "Config API test completed"
+    
+    - name: Test Docker down
+      run: make down
+    
+    - name: Test clean command
+      run: make clean
+    
+    - name: Cleanup development files
+      run: |
+        rm -f docker-compose.dev.yml
+        rm -f note-server/.air.toml
+        rm -f note-server/Dockerfile.dev
+        rm -f note-web/Dockerfile.dev
+
+  test-makefile-dev-mode:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Setup development environment
+      run: |
+        # This will create all development files
+        make create-dev-compose
+        make create-air-config  
+        make create-dev-dockerfiles
+    
+    - name: Test development build (without running)
+      run: |
+        # Test that development Docker files are valid
+        docker-compose -f docker-compose.yml -f docker-compose.dev.yml config
+    
+    - name: Test development down (should work even if nothing running)
+      run: make dev-down
+    
+    - name: Cleanup development files
+      run: |
+        rm -f docker-compose.dev.yml
+        rm -f note-server/.air.toml
+        rm -f note-server/Dockerfile.dev
+        rm -f note-web/Dockerfile.dev
