@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Config, HealthCheck, COMMON_EDITORS, DATE_FORMATS } from './types';
+import { Config, HealthCheck } from './types';
 import { Loader2, Rocket, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -12,7 +12,6 @@ export default function GeneralSettingsPage() {
   const [configExists, setConfigExists] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Config>({});
-  const [tagInput, setTagInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [systemHealth, setSystemHealth] = useState<HealthCheck[]>([]);
@@ -116,18 +115,8 @@ export default function GeneralSettingsPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAddTag = () => {
-    if (tagInput.trim() && !formData.default_tags?.includes(tagInput.trim())) {
-      const newTags = [...(formData.default_tags || []), tagInput.trim()];
-      handleInputChange('default_tags', newTags);
-      setTagInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    const newTags = formData.default_tags?.filter(tag => tag !== tagToRemove) || [];
-    handleInputChange('default_tags', newTags);
-  };
+  // Tag management functions removed as they are not currently used
+  // Can be re-enabled when the General Settings section is uncommented
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -206,42 +195,35 @@ export default function GeneralSettingsPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Welcome to Note AI</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
-          Let&apos;s get you set up! The CLI configuration file doesn&apos;t exist yet.
+          Let&apos;s get you set up! No configuration found yet.
         </p>
         
         <div className="max-w-2xl mx-auto bg-card border border-border rounded-lg p-8 text-left">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Getting Started</h2>
           <div className="space-y-4">
             <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Step 1: Install the CLI</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Create Your Configuration</h3>
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                Make sure you have the Note AI CLI installed and available in your PATH.
+                Click &quot;Create Configuration&quot; below to set up your Note AI settings.
               </p>
             </div>
             
             <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Step 2: Initialize Configuration</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Configure AI Settings</h3>
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                Run any CLI command to create the initial configuration file:
-              </p>
-              <code className="block bg-secondary text-secondary-foreground px-3 py-2 rounded font-mono text-sm">
-                note --help
-              </code>
-            </div>
-            
-            <div className="border-l-4 border-blue-500 pl-4">
-              <h3 className="font-medium text-gray-900 dark:text-white mb-2">Step 3: Refresh This Page</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                Once the configuration file is created, refresh this page to access your settings.
+                After creating your configuration, visit the AI Settings page to configure your OpenAI API key and models.
               </p>
             </div>
           </div>
           
           <div className="mt-6 flex justify-center">
             <Button 
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                setIsEditing(true);
+                setConfigExists(true);
+              }}
             >
-              Refresh Page
+              Create Configuration
             </Button>
           </div>
         </div>
@@ -258,7 +240,7 @@ export default function GeneralSettingsPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Configuration Error</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
-          Unable to read the configuration file. Please check if the CLI is set up correctly.
+          Unable to read the configuration file. There may be a server connectivity issue.
         </p>
         <Button 
           onClick={loadConfig}
@@ -275,7 +257,7 @@ export default function GeneralSettingsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">General Settings</h1>
         <p className="text-gray-600 dark:text-gray-300">
-          Application configuration loaded from the CLI config file.
+          Application configuration.
         </p>
       </div>
 
@@ -287,7 +269,7 @@ export default function GeneralSettingsPage() {
 
         <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
           {/* General Settings */}
-          <section>
+          {/* <section>
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">General Settings</h2>
             <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -375,7 +357,7 @@ export default function GeneralSettingsPage() {
                 </div>
               </div>
             </div>
-          </section>
+          </section> */}
 
           {/* File Paths */}
           <section>
