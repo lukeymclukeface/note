@@ -1,59 +1,63 @@
 'use client';
 
+import { clsx } from 'clsx';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Settings, Bot, Database, FileText } from 'lucide-react';
 
-const settingsNavItems = [
-  { label: 'General', href: '/settings', icon: Settings },
-  { label: 'AI Settings', href: '/settings/ai', icon: Bot },
-  { label: 'Database', href: '/settings/database', icon: Database },
-  { label: 'Raw Config', href: '/settings/raw', icon: FileText },
+const navigation = [
+  { name: 'General', href: '/settings', icon: Settings },
+  { name: 'AI Settings', href: '/settings/ai', icon: Bot },
+  { name: 'Database', href: '/settings/database', icon: Database },
+  { name: 'Raw Config', href: '/settings/raw', icon: FileText },
 ];
 
-export default function SettingsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const SettingsLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex">
-        {/* Left Sidebar */}
-        <div className="w-64 bg-card border-r border-border min-h-screen">
-          <div className="p-6">
-            <h1 className="text-2xl font-bold mb-6">Settings</h1>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Settings</h1>
+          <p className="text-muted-foreground">
+            Configure your note-taking and AI processing preferences
+          </p>
+        </header>
+        
+        <div className="flex gap-8">
+          {/* Sidebar */}
+          <aside className="w-64 flex-shrink-0">
             <nav className="space-y-1">
-              {settingsNavItems.map((item) => {
+              {navigation.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link
-                    key={item.href}
+                    key={item.name}
                     href={item.href}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={clsx(
                       isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                    }`}
+                        ? 'bg-primary/10 text-primary border-primary'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent border-transparent',
+                      'flex items-center px-3 py-2 text-sm font-medium rounded-md border-l-4 transition-colors'
+                    )}
                   >
                     <item.icon className="mr-3 h-5 w-5" />
-                    {item.label}
+                    {item.name}
                   </Link>
                 );
               })}
             </nav>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1">
-          <div className="max-w-4xl p-6">
+          </aside>
+          
+          {/* Main content */}
+          <main className="flex-1 min-w-0">
             {children}
-          </div>
+          </main>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default SettingsLayout;
