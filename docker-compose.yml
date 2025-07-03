@@ -29,6 +29,7 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      - NOTE_SERVER_URL=http://note-server:8080
     depends_on:
       note-server:
         condition: service_healthy

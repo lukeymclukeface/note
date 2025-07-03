@@ -30,8 +30,22 @@ func NewRouterWithHandlers(transcribeHub *ws.TranscribeHub, handlers *Handlers) 
 	r.Post("/transcribe", handlers.TranscribeHandler)
 	r.Post("/summarize", handlers.SummarizeHandler)
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/notes", NotesHandler)
-		r.Post("/notes", NotesHandler)
+		// Notes endpoints
+		r.Get("/notes", handlers.GetNotes)
+		r.Post("/notes", handlers.CreateNote)
+		
+		// Meetings endpoints
+		r.Get("/meetings", handlers.GetMeetings)
+		r.Get("/meetings/{id}", handlers.GetMeeting)
+		
+		// Interviews endpoints
+		r.Get("/interviews", handlers.GetInterviews)
+		
+		// Recordings endpoints
+		r.Get("/recordings", handlers.GetRecordings)
+		r.Get("/recordings/{id}", handlers.GetRecording)
+		r.Get("/recordings/{id}/audio", handlers.GetRecordingAudio)
+		r.Post("/upload-recording", handlers.UploadRecording)
 		
 		// Configuration endpoints
 		r.Get("/config", handlers.GetConfig)

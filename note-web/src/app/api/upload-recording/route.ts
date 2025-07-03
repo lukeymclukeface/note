@@ -1,8 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { homedir } from 'os';
-import { insertRecording } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,65 +11,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
     }
     
-    // Use provided times or fallback to current time
-    const startTime = startTimeStr ? new Date(startTimeStr) : new Date();
-    const endTime = endTimeStr ? new Date(endTimeStr) : new Date();
-
-    // Create .noteai/recordings directory if it doesn't exist
-    const noteaiDir = join(homedir(), '.noteai');
-    const recordingsDir = join(noteaiDir, 'recordings');
+    // Create FormData to send to the Go server
+    const serverFormData = new FormData();
+    serverFormData.append('audio', file);
+    if (startTimeStr) serverFormData.append('startTime', startTimeStr);
+    if (endTimeStr) serverFormData.append('endTime', endTimeStr);
     
-    try {
-      await mkdir(recordingsDir, { recursive: true });
-    } catch {
-      // Directory might already exist, ignore error
+    // Forward the upload request to the Go server
+    const response = await fetch(`${process.env.NOTE_SERVER_URL || 'http://localhost:8080'}/api/upload-recording`, {
+      method: 'POST',
+      body: serverFormData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
     }
 
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `recording_${timestamp}.webm`;
-    const filepath = join(recordingsDir, filename);
-
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    
-    await writeFile(filepath, buffer);
-    
-    // Calculate duration in nanoseconds (compatible with CLI format)
-    const durationMs = endTime.getTime() - startTime.getTime();
-    const durationNs = durationMs * 1000000; // Convert to nanoseconds
-    
-    // Insert recording into database
-    const recordingId = insertRecording({
-      filename,
-      file_path: filepath,
-      start_time: startTime.toISOString(),
-      end_time: endTime.toISOString(),
-      duration: durationNs,
-      file_size: buffer.length,
-      format: 'webm',
-      sample_rate: 44100, // From MediaRecorder config
-      channels: 1, // Typically mono for voice recordings
-    });
-    
-    if (!recordingId) {
-      console.warn('Failed to create database entry for recording:', filename);
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      filename,
-      filepath,
-      size: buffer.length,
-      recordingId,
-      duration: durationMs 
-    });
+    const result = await response.json();
+    return NextResponse.json(result);
 
   } catch (error) {
     console.error('Error uploading recording:', error);
     return NextResponse.json(
-      { error: 'Failed to upload recording' },
+      { success: false, error: 'Failed to upload recording' },
       { status: 500 }
     );
   }

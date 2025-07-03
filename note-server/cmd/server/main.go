@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/your-org/note-server/internal/config"
+	"github.com/your-org/note-server/internal/database"
 	apphttp "github.com/your-org/note-server/internal/http"
 	"github.com/your-org/note-server/internal/service"
 	"github.com/your-org/note-server/internal/ws"
@@ -31,6 +33,24 @@ func main() {
 	// Setup zerolog
 	setupLogger(cfg)
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+
+	// Initialize database
+	// Use ~/.noteai/notes.db to match frontend expectations
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("Failed to get home directory: %v", err)
+	}
+	dbPath := filepath.Join(homeDir, ".noteai", "notes.db")
+	
+	// Ensure .noteai directory exists
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+		log.Fatalf("Failed to create database directory: %v", err)
+	}
+	
+	if err := database.InitDB(dbPath); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	logger.Info().Str("database_path", dbPath).Msg("Database initialized")
 
 	// Initialize services
 	transcribeService := service.NewTranscribeService()

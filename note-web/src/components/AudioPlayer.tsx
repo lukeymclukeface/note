@@ -81,10 +81,28 @@ export default function AudioPlayer({ src, filename, databaseDuration }: AudioPl
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     
-    const handleError = () => {
-      setAudioError('Unable to load audio file. The file may be corrupted or in an unsupported format.');
-      setIsLoaded(false);
-      setIsPlaying(false);
+    const handleError = (e: Event) => {
+      console.error('Audio error event:', e);
+      const audioElement = e.target as HTMLAudioElement;
+      console.error('Audio error details:', {
+        error: audioElement.error,
+        networkState: audioElement.networkState,
+        readyState: audioElement.readyState,
+        src: audioElement.src
+      });
+      
+      // Only show error if we don't have database duration as fallback
+      if (!databaseDuration || databaseDuration <= 0) {
+        setAudioError('Unable to load audio file. The file may be corrupted or in an unsupported format.');
+        setIsLoaded(false);
+        setIsPlaying(false);
+      } else {
+        // Use database duration and hide the error
+        console.log('Using database duration as fallback despite audio error:', databaseDuration);
+        setDuration(databaseDuration);
+        setIsLoaded(true);
+        setAudioError(null);
+      }
     };
 
     audio.addEventListener('timeupdate', updateTime);

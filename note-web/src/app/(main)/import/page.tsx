@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { loadRecordings } from '@/lib/actions/recordings';
+// Removed server action import - now using client-side API calls
 import { formatTime, formatDuration } from '@/lib/dateUtils';
 import type { Recording } from '@/lib/database';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,8 +24,13 @@ export default function ImportPage() {
 
   const fetchRecordings = async () => {
     try {
-      const data = await loadRecordings();
-      setRecordings(data);
+      const response = await fetch('/api/recordings');
+      if (response.ok) {
+        const result = await response.json();
+        setRecordings(result.success ? result.recordings || [] : []);
+      } else {
+        throw new Error(`Failed to fetch recordings: ${response.status}`);
+      }
     } catch (error) {
       console.error('Error loading recordings:', error);
     } finally {

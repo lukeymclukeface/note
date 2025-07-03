@@ -1,10 +1,12 @@
 # Stage 1: Build stage
 FROM golang:1.24-alpine AS build
+# Install build dependencies for CGO
+RUN apk add --no-cache gcc musl-dev sqlite-dev
 WORKDIR /app
 COPY go.* ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /note-server ./cmd/server
+RUN CGO_ENABLED=1 go build -o /note-server ./cmd/server
 
 # Stage 2: Runtime stage
 FROM alpine:3.20
