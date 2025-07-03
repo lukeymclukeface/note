@@ -64,11 +64,11 @@ jobs:
       run: |
         make logs-server &
         sleep 2
-        pkill -f "docker-compose logs" || true
+        pkill -f "docker compose logs" || true
         
         make logs-web &
         sleep 2
-        pkill -f "docker-compose logs" || true
+        pkill -f "docker compose logs" || true
     
     - name: Test configuration API endpoints
       run: |
@@ -113,7 +113,7 @@ jobs:
     - name: Test development build (without running)
       run: |
         # Test that development Docker files are valid
-        docker-compose -f docker-compose.yml -f docker-compose.dev.yml config
+        docker compose -f docker-compose.yml -f docker-compose.dev.yml config
     
     - name: Test development down (should work even if nothing running)
       run: make dev-down

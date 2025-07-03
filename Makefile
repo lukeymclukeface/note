@@ -24,38 +24,38 @@ help: ## Show this help message
 
 build: ## Build all Docker images
 	@echo "$(BLUE)Building Docker images...$(NC)"
-	docker-compose build --no-cache
+	docker compose build --no-cache
 
 build-server: ## Build only the server Docker image
 	@echo "$(BLUE)Building server Docker image...$(NC)"
-	docker-compose build --no-cache note-server
+	docker compose build --no-cache note-server
 
 build-web: ## Build only the web Docker image
 	@echo "$(BLUE)Building web Docker image...$(NC)"
-	docker-compose build --no-cache note-web
+	docker compose build --no-cache note-web
 
 up: ## Start all services in production mode
 	@echo "$(BLUE)Starting services in production mode...$(NC)"
-	docker-compose up -d
+	docker compose up -d
 	@echo "$(GREEN)Services started!$(NC)"
 	@echo "$(YELLOW)Web app: http://localhost:3000$(NC)"
 	@echo "$(YELLOW)Server: http://localhost:8080$(NC)"
 
 down: ## Stop all services
 	@echo "$(BLUE)Stopping services...$(NC)"
-	docker-compose down
+	docker compose down
 	@echo "$(GREEN)Services stopped!$(NC)"
 
 restart: down up ## Restart all services
 
 logs: ## Show logs from all services
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-server: ## Show logs from server only
-	docker-compose logs -f note-server
+	docker compose logs -f note-server
 
 logs-web: ## Show logs from web only
-	docker-compose logs -f note-web
+	docker compose logs -f note-web
 
 dev: ## Start development environment with hot reloading
 	@echo "$(BLUE)Starting development environment with hot reloading...$(NC)"
@@ -63,7 +63,7 @@ dev: ## Start development environment with hot reloading
 		echo "$(YELLOW)Creating development docker-compose file...$(NC)"; \
 		$(MAKE) create-dev-compose; \
 	fi
-	docker-compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEV_FILE) up
+	docker compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEV_FILE) up
 	@echo "$(GREEN)Development environment started!$(NC)"
 	@echo "$(YELLOW)Web app (dev): http://localhost:3000$(NC)"
 	@echo "$(YELLOW)Server: http://localhost:8080$(NC)"
@@ -74,11 +74,11 @@ dev-build: ## Build and start development environment
 		echo "$(YELLOW)Creating development docker-compose file...$(NC)"; \
 		$(MAKE) create-dev-compose; \
 	fi
-	docker-compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEV_FILE) up --build
+	docker compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEV_FILE) up --build
 
 dev-down: ## Stop development environment
 	@echo "$(BLUE)Stopping development environment...$(NC)"
-	docker-compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEV_FILE) down
+	docker compose -f $(COMPOSE_FILE) -f $(COMPOSE_DEV_FILE) down
 
 dev-server: ## Start only server in development mode
 	@echo "$(BLUE)Starting server in development mode...$(NC)"
@@ -92,23 +92,23 @@ rebuild: down build up ## Rebuild and restart all services
 
 rebuild-server: ## Rebuild and restart only server
 	@echo "$(BLUE)Rebuilding server...$(NC)"
-	docker-compose stop note-server
-	docker-compose build --no-cache note-server
-	docker-compose up -d note-server
+	docker compose stop note-server
+	docker compose build --no-cache note-server
+	docker compose up -d note-server
 
 rebuild-web: ## Rebuild and restart only web
 	@echo "$(BLUE)Rebuilding web...$(NC)"
-	docker-compose stop note-web
-	docker-compose build --no-cache note-web
-	docker-compose up -d note-web
+	docker compose stop note-web
+	docker compose build --no-cache note-web
+	docker compose up -d note-web
 
 status: ## Show status of all services
 	@echo "$(BLUE)Service Status:$(NC)"
-	docker-compose ps
+	docker compose ps
 
 clean: ## Clean up Docker resources (containers, images, volumes)
 	@echo "$(BLUE)Cleaning up Docker resources...$(NC)"
-	docker-compose down --volumes --remove-orphans
+	docker compose down --volumes --remove-orphans
 	docker system prune -f
 	docker volume prune -f
 	@echo "$(GREEN)Cleanup completed!$(NC)"
@@ -118,7 +118,7 @@ clean-all: ## Clean up everything including images
 	@read -p "Are you sure? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose down --volumes --remove-orphans; \
+		docker compose down --volumes --remove-orphans; \
 		docker system prune -a -f; \
 		docker volume prune -f; \
 		echo "$(GREEN)Complete cleanup finished!$(NC)"; \
@@ -150,10 +150,10 @@ test-server: ## Run server tests only
 	cd note-server && go test ./...
 
 shell-server: ## Open shell in server container
-	docker-compose exec note-server sh
+	docker compose exec note-server sh
 
 shell-web: ## Open shell in web container
-	docker-compose exec note-web sh
+	docker compose exec note-web sh
 
 create-dev-compose: ## Create development docker-compose override file
 	@echo "$(BLUE)Creating development docker-compose override...$(NC)"

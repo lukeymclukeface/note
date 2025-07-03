@@ -168,7 +168,7 @@ jobs:
     - name: Run integration tests with Docker Compose
       run: |
         # Start services
-        docker-compose up -d
+        docker compose up -d
         
         # Wait for services to be ready
         sleep 30
@@ -183,7 +183,7 @@ jobs:
         curl -f http://localhost:3000/api/config || echo "Config API test - expected to fail without config"
         
         # Cleanup
-        docker-compose down
+        docker compose down
 
   coverage-report:
     needs: [test-cli, test-server, test-web]
