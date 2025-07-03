@@ -1,5 +1,6 @@
 # Note AI Development Makefile
 # Provides commands for building, running, and developing the Note AI application
+# Two-component architecture: note-server (Go backend) and note-web (React frontend)
 
 .PHONY: help build up down restart logs clean dev dev-server dev-web rebuild status install test
 

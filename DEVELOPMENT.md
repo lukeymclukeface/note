@@ -1,17 +1,21 @@
 # Development Guide
 
-This project includes a comprehensive Makefile for easy development and deployment.
+This project consists of two main components: a server and a web application.
+
+## Architecture Overview
+
+The application is built using a microservices architecture with the following components:
+
+- **Server**: Backend API service built with Go
+- **Web**: Frontend application built with Next.js
 
 ## Quick Start
 
 ```bash
-# Setup development environment (first time only)
-make setup-dev
+# Build and start all services
+make build up
 
-# Start development with hot reloading
-make dev
-
-# Or start production mode
+# Or use quick start
 make quick-start
 ```
 
@@ -23,24 +27,7 @@ Run `make help` to see all available commands:
 make help
 ```
 
-## Development Workflow
-
-### First Time Setup
-```bash
-# Install dependencies and setup development files
-make setup-dev
-```
-
-### Daily Development
-```bash
-# Start development with hot reloading
-make dev
-
-# Or build and start development
-make dev-build
-```
-
-### Production Testing
+## Production Testing
 ```bash
 # Build and start production containers
 make build up
@@ -49,7 +36,7 @@ make build up
 make quick-start
 ```
 
-### Debugging
+## Debugging
 ```bash
 # View logs
 make logs
@@ -63,7 +50,7 @@ make status
 make health
 ```
 
-### Individual Services
+## Individual Services
 ```bash
 # Build individual services
 make build-server
@@ -74,7 +61,7 @@ make rebuild-server
 make rebuild-web
 ```
 
-### Cleanup
+## Cleanup
 ```bash
 # Clean up Docker resources
 make clean
@@ -83,55 +70,18 @@ make clean
 make clean-all
 ```
 
-## Hot Reloading
-
-The development environment includes:
-
-- **Server**: Uses Air for Go hot reloading
-- **Web**: Uses Next.js built-in hot reloading
-- **Volumes**: Source code is mounted for instant updates
-
-## Development vs Production
-
-### Development Mode (`make dev`)
-- Hot reloading enabled
-- Source code mounted as volumes
-- Debug logging enabled
-- Development Dockerfiles used
-
-### Production Mode (`make up`)
-- Optimized builds
-- No hot reloading
-- Production Dockerfiles used
-- Minimal container sizes
-
 ## Port Mapping
 
 - **Web App**: http://localhost:3000
 - **Server API**: http://localhost:8080
 
-## Development Commands
+## Command Reference
 
 ### Setup & Installation
 
 | Command | Description |
 |---------|-------------|
-| `make setup-dev` | Setup complete development environment |
-| `make install` | Install dependencies for development |
-| `make create-dev-compose` | Create development docker-compose override file |
-| `make create-air-config` | Create Air config for Go hot reloading |
-| `make create-dev-dockerfiles` | Create development Dockerfiles |
-
-### Development Environment
-
-| Command | Description |
-|---------|-------------|
-| `make dev` | Start development environment with hot reloading |
-| `make dev-build` | Build and start development environment |
-| `make dev-down` | Stop development environment |
-| `make dev-server` | Start only server in development mode |
-| `make dev-web` | Start only web in development mode |
-| `make quick-dev` | Quick dev: build and run in development mode |
+| `make install` | Install dependencies |
 
 ### Building & Deployment
 
@@ -140,7 +90,7 @@ The development environment includes:
 | `make build` | Build all Docker images |
 | `make build-server` | Build only the server Docker image |
 | `make build-web` | Build only the web Docker image |
-| `make up` | Start all services in production mode |
+| `make up` | Start all services |
 | `make down` | Stop all services |
 | `make restart` | Restart all services |
 | `make quick-start` | Quick start: build and run |
@@ -190,7 +140,7 @@ The development environment includes:
 
 ## Tips
 
-1. Use `make dev` for daily development
+1. Use `make quick-start` to build and start all services
 2. Use `make health` to check if services are running
 3. Use `make logs` to debug issues
 4. Use `make clean` when you have Docker issues

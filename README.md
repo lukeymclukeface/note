@@ -1,19 +1,14 @@
 # Note
 
-[![Test CLI](https://github.com/lukeymclukeface/note/workflows/Test%20CLI/badge.svg)](https://github.com/lukeymclukeface/note/actions/workflows/test-cli.yml)
 [![Test Web](https://github.com/lukeymclukeface/note/workflows/Test%20Web/badge.svg)](https://github.com/lukeymclukeface/note/actions/workflows/test-web.yml)
 [![Test Server](https://github.com/lukeymclukeface/note/workflows/Test%20Server/badge.svg)](https://github.com/lukeymclukeface/note/actions/workflows/test-server.yml)
 
-A comprehensive AI-powered note-taking system that combines audio recording, transcription, and intelligent summarization capabilities.
+A comprehensive AI-powered note-taking system with web interface that provides audio recording, transcription, and intelligent summarization capabilities.
 
 ## Project Structure
 
 ```
 note/
-├── note-cli/                 # Command-line interface
-│   ├── cmd/
-│   ├── internal/
-│   └── ...
 ├── note-server/              # Go backend API server
 │   ├── cmd/
 │   ├── internal/
@@ -29,16 +24,15 @@ note/
 └── README.md                 # This file
 ```
 
-This repository contains three main components:
+This repository contains two main components:
 
-- **[note-cli](./note-cli/)** - Command-line interface for recording, importing, and managing notes
 - **[note-web](./note-web/)** - Next.js web application for browsing and managing notes
 - **[note-server](./note-server/)** - Go-based backend API server for real-time functionality
 
 ## Features
 
 ### Audio Processing
-- Record audio directly from your microphone
+- Record audio directly through the web interface
 - Import existing audio files (mp3, wav, m4a, ogg, flac)
 - Automatic chunked transcription for large files
 - Speaker diarization through AI post-processing
@@ -53,15 +47,15 @@ This repository contains three main components:
 ### Content Management
 - SQLite database for metadata storage
 - Markdown and text file import support
-- Interactive note browsing and management
+- Web-based note browsing and management
 - Bulk operations and search capabilities
 
 ### User Experience
-- Beautiful terminal UI with Bubble Tea
-- Interactive prompts and selections
-- Progress spinners for long operations
-- Comprehensive verbose logging
-- Cross-platform compatibility (macOS focus)
+- Modern web interface built with Next.js
+- Real-time updates via WebSocket
+- Responsive design for desktop and mobile
+- Intuitive file upload and management
+- Cross-platform web accessibility
 
 ## Server Component (note-server)
 
@@ -75,17 +69,19 @@ This repository contains three main components:
 ## Quick Start
 
 ### Prerequisites
-- Go 1.23+ (for CLI)
-- Node.js 18+ (for web interface)
-- FFmpeg (auto-installed via Homebrew on macOS)
+- Docker and Docker Compose (for containerized deployment)
+- Or for local development:
+  - Go 1.23+ (for backend server)
+  - Node.js 18+ (for web interface)
+  - FFmpeg (for audio processing)
 - OpenAI API key
 
-### CLI Setup
+### Web Application Setup
 1. Clone the repository
-2. Set up the CLI: `cd note-cli && go build -o note cmd/note/main.go`
-3. Run setup: `./note setup`
-4. Configure OpenAI models: `./note config model`
-5. Start recording or importing: `./note record` or `./note import`
+2. Set up environment variables with your OpenAI API key
+3. Use Docker Compose for quick deployment (see below)
+4. Access the web interface at `http://localhost:3000`
+5. Start recording or importing audio files through the web interface
 
 ## Running the Application
 
@@ -120,12 +116,17 @@ make dev-server
 make dev-web
 ```
 
-#### Manual CLI Build
+#### Manual Development Setup
 ```bash
-cd note-cli
-go build -o note cmd/note/main.go
-./note setup
-./note config model
+# Backend server
+cd note-server
+go mod download
+go run cmd/server/main.go
+
+# Web frontend (in another terminal)
+cd note-web
+npm install
+npm run dev
 ```
 
 ## Configuration

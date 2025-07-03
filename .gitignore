@@ -15,8 +15,6 @@ out/
 go.work
 
 # Build artifacts
-note-cli/note
-note-cli/note-cli
 dist/
 build/
 

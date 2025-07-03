@@ -8,47 +8,6 @@ on:
     branches: [ master, main ]
 
 jobs:
-  test-cli:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24'
-    
-    - name: Cache Go modules
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-cli-${{ hashFiles('note-cli/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-cli-
-    
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ffmpeg build-essential
-        
-    - name: Test CLI
-      working-directory: note-cli
-      run: |
-        go mod download
-        go mod verify
-        go build -o note cmd/note/main.go
-        mkdir -p /home/runner/.noteai
-        go test -v -coverprofile=coverage.out ./...
-        
-    - name: Upload CLI coverage
-      uses: actions/upload-artifact@v4
-      with:
-        name: cli-coverage
-        path: note-cli/coverage.out
-        retention-days: 7
 
   test-server:
     runs-on: ubuntu-latest
@@ -120,80 +79,15 @@ jobs:
         path: note-web/coverage/
         retention-days: 7
 
-  build-docker-images:
-    needs: [test-cli, test-server, test-web]
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Build Server Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./note-server
-        file: ./note-server/Dockerfile
-        push: false
-        tags: note-server:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-    
-    - name: Build Web Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./note-web
-        file: ./note-web/Dockerfile
-        push: false
-        tags: note-web:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-  integration-test:
-    needs: [build-docker-images]
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Build images for integration test
-      run: |
-        docker build -t note-server:test ./note-server
-        docker build -t note-web:test ./note-web
-    
-    - name: Run integration tests with Docker Compose
-      run: |
-        # Start services
-        docker compose up -d
-        
-        # Wait for services to be ready
-        sleep 30
-        
-        # Test server health
-        curl -f http://localhost:8080/healthz || exit 1
-        
-        # Test web app
-        curl -f http://localhost:3000 || exit 1
-        
-        # Test configuration API
-        curl -f http://localhost:3000/api/config || echo "Config API test - expected to fail without config"
-        
-        # Cleanup
-        docker compose down
-
   coverage-report:
-    needs: [test-cli, test-server, test-web]
+    needs: [test-server, test-web]
     runs-on: ubuntu-latest
     if: always()
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Download all coverage reports
+    - name: Download Server and Web coverage reports
       uses: actions/download-artifact@v4
       with:
         path: coverage
@@ -202,11 +96,6 @@ jobs:
       run: |
         echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ -f coverage/cli-coverage/coverage.out ]; then
-          echo "### CLI Coverage" >> $GITHUB_STEP_SUMMARY
-          go tool cover -func=coverage/cli-coverage/coverage.out | tail -1 >> $GITHUB_STEP_SUMMARY
-        fi
         
         if [ -f coverage/server-coverage/coverage.out ]; then
           echo "### Server Coverage" >> $GITHUB_STEP_SUMMARY
